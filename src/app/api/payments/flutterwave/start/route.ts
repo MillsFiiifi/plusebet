@@ -87,6 +87,10 @@ export async function POST(request: Request) {
   // placeholder only if a user has no email on file.
   const customerEmail = user.email?.trim() || `customer+${userId}@pluse.app`
 
+  // Ghana → open the checkout straight on Mobile Money. Nigeria has no
+  // Ghana-style MoMo, so leave all methods (card / bank transfer / USSD).
+  const paymentOptions = user.currency === 'GHS' ? 'mobilemoneyghana' : undefined
+
   try {
     const init = await initialisePayment({
       email: customerEmail,
@@ -97,6 +101,7 @@ export async function POST(request: Request) {
       txRef,
       redirectUrl,
       title: purpose === 'verification' ? 'Account verification' : 'Deposit',
+      paymentOptions,
       meta: { userId, purpose, country: user.country },
     })
     return NextResponse.json(

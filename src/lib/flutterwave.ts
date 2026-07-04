@@ -55,6 +55,9 @@ export async function initialisePayment(input: {
   txRef: string
   redirectUrl: string
   title?: string
+  /** Comma-separated Flutterwave payment methods to show, e.g.
+   *  "mobilemoneyghana" to open the checkout straight on MoMo. Omit for all. */
+  paymentOptions?: string
   meta?: Record<string, unknown>
 }): Promise<FlutterwaveInitResponse> {
   const res = await fetch(`${FLW_BASE}/payments`, {
@@ -68,6 +71,7 @@ export async function initialisePayment(input: {
       amount: input.amount,
       currency: input.currency,
       redirect_url: input.redirectUrl,
+      payment_options: input.paymentOptions || undefined,
       customer: {
         email: input.email,
         name: input.name,
