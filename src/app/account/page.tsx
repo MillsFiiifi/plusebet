@@ -7,6 +7,7 @@ import { Plus, ArrowDownToLine, History, Receipt, X, Check, Loader2, LogOut, Key
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 import { formatMoneyWithCurrency } from "@/lib/format-money";
+import { GoalAlertsToggle } from "@/components/goal-alerts-toggle";
 import { getUserId, clearUserSession } from "@/lib/user-session";
 import { getCountryForCurrency, getMinFirstDeposit, isCurrencyCode } from "@/lib/countries";
 
@@ -267,6 +268,11 @@ export default function AccountPage() {
         <Kpi icon="💰" tone="emerald" val={money(user?.totalDeposited ?? 0)} label="Total Deposited" />
         <Kpi icon="🏧" tone="cyan" val={money(user?.totalWithdrawn ?? 0)} label="Total Withdrawn" />
         <Kpi icon="🔓" tone="rose" val={user?.withdrawalApproved ? "Enabled" : "Pending"} label="Withdrawals" />
+      </div>
+
+      {/* live goal alerts opt-in */}
+      <div className="mt-4">
+        <GoalAlertsToggle />
       </div>
 
       {/* recent activity */}

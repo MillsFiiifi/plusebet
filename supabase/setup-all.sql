@@ -555,3 +555,21 @@ alter table match_overrides
 alter table bookings
   add column if not exists expires_at timestamptz;
 
+-- ===== migrations/0021_push_and_goal_alerts.sql =====
+create table if not exists push_subscriptions (
+  endpoint    text primary key,
+  user_id     text not null,
+  p256dh      text not null,
+  auth        text not null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user_idx
+  on push_subscriptions (user_id);
+
+create table if not exists goal_notifications (
+  match_id    text primary key,
+  home        integer not null default 0,
+  away        integer not null default 0,
+  updated_at  timestamptz not null default now()
+);
+

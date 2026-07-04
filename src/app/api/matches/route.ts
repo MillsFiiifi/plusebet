@@ -4,6 +4,7 @@ import { readCustomMatchesForSport } from '@/lib/custom-matches-store'
 import { readMatchOverridesMap, type MatchOverride } from '@/lib/match-overrides-store'
 import { deriveMarketBook } from '@/lib/markets'
 import { settlePendingBets } from '@/lib/settle-bets'
+import { runGoalAlerts } from '@/lib/goal-alerts'
 import { liveClockLabel } from '@/lib/match-betting'
 import type { Match } from '@/lib/domain-types'
 
@@ -29,6 +30,21 @@ async function maybeSettleBets(): Promise<void> {
     await settlePendingBets()
   } catch (e) {
     console.error('[matches] auto-settle failed (feed still returned):', e)
+  }
+}
+
+// Push live goal alerts off the same feed traffic (throttled per instance;
+// runGoalAlerts is idempotent so duplicate runs don't double-notify).
+let lastGoalCheckAt = 0
+const GOAL_THROTTLE_MS = 15_000
+async function maybeGoalAlerts(): Promise<void> {
+  const now = Date.now()
+  if (now - lastGoalCheckAt < GOAL_THROTTLE_MS) return
+  lastGoalCheckAt = now
+  try {
+    await runGoalAlerts()
+  } catch (e) {
+    console.error('[matches] goal alerts failed (feed still returned):', e)
   }
 }
 
@@ -93,8 +109,8 @@ export async function GET(request: Request) {
     )
   }
 
-  // Settle finished bets in the background of the feed (throttled).
-  await maybeSettleBets()
+  // Settle finished bets + push goal alerts off the feed (both throttled).
+  await Promise.all([maybeSettleBets(), maybeGoalAlerts()])
 
   // Pull admin overrides up front; one map applies to both custom + API matches.
   // If the table doesn't exist yet (migration not run) we fall back to empty.
