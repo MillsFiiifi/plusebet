@@ -398,16 +398,19 @@ function PaymentModal({
   // Korapay hosted checkout (Ghana + Nigeria): mint a one-time checkout URL and
   // redirect the player there. Auto-credits on return via callback + webhook.
   const useKorapay = getCountryForCurrency(cc).gateway === "korapay";
-  // Flutterwave hosted checkout (Ghana + Nigeria) — the MAIN gateway. Same
-  // redirect flow; if it fails to start, we fall back to Korapay automatically.
+  // Flutterwave — the MAIN gateway. Ghana uses our OWN branded MoMo checkout
+  // (direct charge + phone prompt, no hosted page); Nigeria uses the hosted
+  // redirect (card / bank / USSD). Korapay is the automatic fallback.
   const useFlutterwave = getCountryForCurrency(cc).gateway === "flutterwave";
+  const useFlutterwaveMomo = useFlutterwave && cc === "GHS";
+  const useFlutterwaveHosted = useFlutterwave && cc !== "GHS";
   // Paystack mobile-money checkout. NETWORK ids (mtn/vod/atl) are
   // Paystack's GH provider codes, sent as `provider` to the start endpoint.
   const usePaystackMomo = getCountryForCurrency(cc).gateway === "paystack";
-  // Hosted redirect checkouts (Moolre, Korapay, Flutterwave) skip the
+  // Hosted redirect checkouts (Moolre, Korapay, Flutterwave-NG) skip the
   // agent-account + screenshot UI: the player pays on the gateway page and we
   // credit on return.
-  const useHostedCheckout = useMoolre || useKorapay || useFlutterwave;
+  const useHostedCheckout = useMoolre || useKorapay || useFlutterwaveHosted;
   const minDeposit = getMinFirstDeposit(userCountry);
   // Show the deposit accounts for the user's country; fall back to all if none
   // are configured for their country (so deposits are never blocked).
@@ -460,10 +463,69 @@ function PaymentModal({
   // Route the deposit to the right flow for the user's country.
   async function deposit() {
     if (useMoolre) return depositMoolre();
-    if (useFlutterwave) return depositFlutterwave();
+    if (useFlutterwaveMomo) return depositFlutterwaveMomo();
+    if (useFlutterwaveHosted) return depositFlutterwave();
     if (useKorapay) return depositKorapay();
     if (usePaystackMomo) return depositPaystackMomo();
     return depositManual();
+  }
+
+  // Custom Ghana MoMo checkout: charge Flutterwave directly and poll while the
+  // player approves the prompt on their phone — all on our own screen. Falls
+  // back to Korapay if the charge can't start.
+  async function pollFlutterwaveMomo(reference: string) {
+    const TERMINAL_FAIL = [
+      "failed", "amount-mismatch", "currency-mismatch", "verify-failed",
+      "no-user", "credit-failed", "unknown-reference",
+    ];
+    for (let i = 0; i < 60; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      try {
+        const res = await fetch(`/api/payments/flutterwave/momo/status?reference=${encodeURIComponent(reference)}`);
+        const data = await res.json();
+        const s = data.status as string;
+        if (s === "success" || s === "already-credited") { setDone(true); onSuccess(); return; }
+        if (TERMINAL_FAIL.includes(s)) { setError("Payment was not completed. Please try again."); return; }
+        setStatus("Waiting for your approval — " + approvalHint);
+      } catch {
+        /* transient — keep polling */
+      }
+    }
+    setError("Still waiting for confirmation. If you approved the payment, your balance will update once it settles — refresh in a minute.");
+  }
+
+  async function depositFlutterwaveMomo() {
+    if (!phone.trim()) {
+      setError("Enter your mobile money number.");
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    setStatus("Starting mobile money deposit…");
+    try {
+      const res = await fetch("/api/payments/flutterwave/momo/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, amount: amt, phone: phone.trim(), network, purpose: "deposit" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.reference) {
+        // Primary failed — fall back to the backup gateway (Korapay).
+        console.warn("[deposit] flutterwave momo unavailable, using korapay backup:", data.error);
+        return depositKorapay();
+      }
+      // Some networks return a page to complete (OTP/voucher) instead of a prompt.
+      if (data.redirect) {
+        window.location.assign(data.redirect as string);
+        return;
+      }
+      setStatus("Approve the prompt on your phone to complete your deposit.");
+      await pollFlutterwaveMomo(data.reference);
+    } catch {
+      return depositKorapay();
+    } finally {
+      setBusy(false);
+    }
   }
 
   // Flutterwave (GH + NG) is the MAIN gateway: mint a hosted-checkout URL and
@@ -764,7 +826,44 @@ function PaymentModal({
         ) : (
           <div className="p-5 space-y-4">
             {type === "deposit" ? (
-              useHostedCheckout ? (
+              useFlutterwaveMomo ? (
+              <>
+              <div>
+                <label className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">Choose network</label>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {NETWORKS.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => setNetwork(n.id)}
+                      disabled={busy}
+                      className={cn("flex flex-col items-center gap-1 rounded-xl border py-3 text-[10.5px] font-semibold transition disabled:opacity-50",
+                        network === n.id ? "border-[var(--color-violet)]/60 bg-[var(--color-surface-2)] text-white glow-violet" : "border-[var(--color-line)] text-[var(--color-ink-dim)] hover:border-[var(--color-line-2)]",
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={n.logo} alt={n.name} className="w-8 h-8 rounded-md object-contain" />
+                      {n.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">Mobile-money number</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  disabled={busy}
+                  placeholder="0244 XXX XXX"
+                  className="w-full mt-2 num text-[15px] bg-[var(--color-surface)] border border-[var(--color-line)] rounded-xl px-3.5 py-3 outline-none focus:border-[var(--color-violet)]/60"
+                />
+                <p className="mt-2 text-[11px] text-[var(--color-ink-faint)] leading-snug">
+                  You&apos;ll get a prompt on your phone to approve the payment. Your
+                  balance updates automatically once it&apos;s confirmed.
+                </p>
+              </div>
+              </>
+              ) : useHostedCheckout ? (
               <div className="rounded-xl border border-[var(--color-violet)]/30 bg-[var(--color-surface-2)] px-3.5 py-3.5">
                 {useMoolre && (
                   <div className="flex items-center gap-2">
@@ -884,7 +983,7 @@ function PaymentModal({
               )}
             </div>
 
-            {type === "deposit" && !useHostedCheckout && (
+            {type === "deposit" && !useHostedCheckout && !useFlutterwaveMomo && (
               <div>
                 <label className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">Payment screenshot</label>
                 <label className={cn(
@@ -916,16 +1015,25 @@ function PaymentModal({
 
             <button
               onClick={type === "deposit" ? deposit : withdraw}
-              disabled={busy || !(amt > 0) || belowMin || (type === "deposit" && !useHostedCheckout && !file) || (type === "withdraw" && !phone.trim())}
+              disabled={busy || !(amt > 0) || belowMin || (type === "deposit" && !useHostedCheckout && !useFlutterwaveMomo && !file) || (type === "deposit" && useFlutterwaveMomo && !phone.trim()) || (type === "withdraw" && !phone.trim())}
               className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white disabled:opacity-50 active:scale-[.99] transition capitalize flex items-center justify-center gap-2"
             >
               {busy && <Loader2 size={16} className="animate-spin" />}
               {type === "deposit"
                 ? busy
-                  ? (useHostedCheckout ? "Redirecting…" : "Submitting…")
-                  : `${useHostedCheckout ? "Deposit" : "Submit deposit"} ${amt > 0 ? money(amt) : ""}`
+                  ? (useHostedCheckout ? "Redirecting…" : useFlutterwaveMomo ? "Processing…" : "Submitting…")
+                  : `${useHostedCheckout || useFlutterwaveMomo ? "Deposit" : "Submit deposit"} ${amt > 0 ? money(amt) : ""}`
                 : `Withdraw ${amt > 0 ? money(amt) : ""}`}
             </button>
+
+            {type === "deposit" && (
+              <p className="text-center text-[11.5px] text-[var(--color-ink-dim)] mt-1">
+                Payment issue?{" "}
+                <a href="mailto:sistermills2000@gmail.com" className="font-semibold text-[var(--color-cyan)] hover:underline">
+                  sistermills2000@gmail.com
+                </a>
+              </p>
+            )}
           </div>
         )}
       </div>

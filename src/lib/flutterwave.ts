@@ -95,6 +95,68 @@ export async function initialisePayment(input: {
   return body.data
 }
 
+// Ghana MoMo network codes Flutterwave expects. UI ids map: mtn→MTN,
+// vod→VODAFONE (Telecel), atl→AIRTELTIGO. Adjust here if the live account
+// rejects a value (older accounts use TIGO for AirtelTigo).
+export type GhanaMomoNetwork = 'MTN' | 'VODAFONE' | 'AIRTELTIGO'
+
+export interface FlutterwaveChargeResult {
+  /** Inner charge status — usually 'pending' until the customer approves. */
+  status: string
+  /** Set when the network needs the customer sent to a page (OTP/voucher). */
+  redirect: string | null
+  message?: string
+}
+
+/**
+ * Directly charge a Ghana mobile-money wallet — powers our own branded MoMo
+ * checkout (no Flutterwave-hosted page). The customer gets a prompt on their
+ * phone; poll verifyByReference() until it settles. Some networks return a
+ * `redirect` the customer must complete instead of a phone prompt.
+ */
+export async function chargeMobileMoneyGhana(input: {
+  txRef: string
+  amount: number // major units
+  email: string
+  phone: string
+  network: GhanaMomoNetwork
+  fullname?: string
+}): Promise<FlutterwaveChargeResult> {
+  const res = await fetch(`${FLW_BASE}/charges?type=mobile_money_ghana`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${getSecretKey()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      tx_ref: input.txRef,
+      amount: input.amount,
+      currency: 'GHS',
+      email: input.email,
+      phone_number: input.phone,
+      network: input.network,
+      fullname: input.fullname || undefined,
+    }),
+    cache: 'no-store',
+  })
+  const body = (await res.json().catch(() => ({}))) as {
+    status?: string
+    message?: string
+    data?: { status?: string }
+    meta?: { authorization?: { redirect?: string; mode?: string } }
+  }
+  if (!res.ok || body.status !== 'success') {
+    throw new Error(
+      `Flutterwave MoMo charge failed: ${body.message ?? `HTTP ${res.status}`}`,
+    )
+  }
+  return {
+    status: body.data?.status ?? 'pending',
+    redirect: body.meta?.authorization?.redirect ?? null,
+    message: body.message,
+  }
+}
+
 /**
  * Authoritatively fetch a transaction by OUR tx_ref (not Flutterwave's numeric
  * id), so the callback / webhook / reconcile paths all key off the same value.
