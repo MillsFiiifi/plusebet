@@ -19,6 +19,15 @@ function sanitizeReturnPath(raw: string | undefined): string {
 }
 
 function originFromRequest(req: Request): string {
+  // Prefer the host the player is actually on, so after payment we always send
+  // them back to the same site (works across domains, ignores a stale
+  // NEXT_PUBLIC_APP_URL). Fall back to the configured app URL, then req.url.
+  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host')
+  if (host) {
+    const proto =
+      req.headers.get('x-forwarded-proto') ?? (host.includes('localhost') ? 'http' : 'https')
+    return `${proto}://${host}`
+  }
   const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim()
   if (explicit) return explicit.replace(/\/$/, '')
   const url = new URL(req.url)
