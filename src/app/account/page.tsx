@@ -108,6 +108,20 @@ export default function AccountPage() {
       .catch(() => {});
   }, [refresh]);
 
+  // Same safety net for Flutterwave (the main gateway).
+  useEffect(() => {
+    const id = getUserId();
+    if (!id) return;
+    fetch("/api/payments/flutterwave/reconcile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: id }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d?.credited > 0) void refresh(); })
+      .catch(() => {});
+  }, [refresh]);
+
   // Show a result banner when Moolre sends the player back here after checkout.
   useEffect(() => {
     const status = new URLSearchParams(window.location.search).get("moolre");
@@ -127,6 +141,21 @@ export default function AccountPage() {
   // Same banner for the Korapay hosted-checkout return (?korapay=...).
   useEffect(() => {
     const status = new URLSearchParams(window.location.search).get("korapay");
+    if (!status) return;
+    const ok = status === "success" || status === "already-credited";
+    setReturnMsg({
+      ok,
+      text: ok
+        ? "Deposit successful — your balance has been updated."
+        : "Your deposit wasn't completed. If you were charged, it'll reflect shortly.",
+    });
+    window.history.replaceState(null, "", window.location.pathname);
+    void refresh();
+  }, [refresh]);
+
+  // Same banner for the Flutterwave hosted-checkout return (?flutterwave=...).
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("flutterwave");
     if (!status) return;
     const ok = status === "success" || status === "already-credited";
     setReturnMsg({
@@ -369,12 +398,16 @@ function PaymentModal({
   // Korapay hosted checkout (Ghana + Nigeria): mint a one-time checkout URL and
   // redirect the player there. Auto-credits on return via callback + webhook.
   const useKorapay = getCountryForCurrency(cc).gateway === "korapay";
+  // Flutterwave hosted checkout (Ghana + Nigeria) — the MAIN gateway. Same
+  // redirect flow; if it fails to start, we fall back to Korapay automatically.
+  const useFlutterwave = getCountryForCurrency(cc).gateway === "flutterwave";
   // Paystack mobile-money checkout. NETWORK ids (mtn/vod/atl) are
   // Paystack's GH provider codes, sent as `provider` to the start endpoint.
   const usePaystackMomo = getCountryForCurrency(cc).gateway === "paystack";
-  // Hosted redirect checkouts (Moolre, Korapay) skip the agent-account +
-  // screenshot UI: the player pays on the gateway page and we credit on return.
-  const useHostedCheckout = useMoolre || useKorapay;
+  // Hosted redirect checkouts (Moolre, Korapay, Flutterwave) skip the
+  // agent-account + screenshot UI: the player pays on the gateway page and we
+  // credit on return.
+  const useHostedCheckout = useMoolre || useKorapay || useFlutterwave;
   const minDeposit = getMinFirstDeposit(userCountry);
   // Show the deposit accounts for the user's country; fall back to all if none
   // are configured for their country (so deposits are never blocked).
@@ -427,9 +460,37 @@ function PaymentModal({
   // Route the deposit to the right flow for the user's country.
   async function deposit() {
     if (useMoolre) return depositMoolre();
+    if (useFlutterwave) return depositFlutterwave();
     if (useKorapay) return depositKorapay();
     if (usePaystackMomo) return depositPaystackMomo();
     return depositManual();
+  }
+
+  // Flutterwave (GH + NG) is the MAIN gateway: mint a hosted-checkout URL and
+  // send the customer there. If Flutterwave can't start (down / not configured),
+  // fall back to Korapay automatically so deposits keep working.
+  async function depositFlutterwave() {
+    setError(null);
+    setBusy(true);
+    setStatus("Opening secure checkout…");
+    try {
+      const res = await fetch("/api/payments/flutterwave/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, amount: amt, returnPath: "/account" }),
+      });
+      const data: { url?: string; error?: string } = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
+        window.location.assign(data.url);
+        return;
+      }
+      // Primary failed — fall back to the backup gateway (Korapay).
+      console.warn("[deposit] flutterwave unavailable, using korapay backup:", data.error);
+      return depositKorapay();
+    } catch {
+      // Network error on the primary — try the backup before giving up.
+      return depositKorapay();
+    }
   }
 
   // Korapay (GH + NG): mint a one-time hosted-checkout URL and send the customer
