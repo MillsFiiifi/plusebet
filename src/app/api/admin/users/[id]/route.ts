@@ -45,7 +45,7 @@ async function notifyWithdrawalApproved(userId: string): Promise<void> {
     if (!recipient) return
 
     const amount = formatMoneyWithCurrency(pending.amount, pending.currency)
-    const message = `Primebet: Your withdrawal of ${amount} has been approved and is being processed. Thank you for playing with us.`
+    const message = `Plusebet: Your withdrawal of ${amount} has been approved and is being processed. Thank you for playing with us.`
 
     const result = await sendSms(recipient, message)
     if (!result.ok) {
