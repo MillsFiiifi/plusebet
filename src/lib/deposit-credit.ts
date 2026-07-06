@@ -22,7 +22,9 @@ import {
 } from '@/lib/users-store'
 import { creditCommission, findSubAdminById } from '@/lib/sub-admins-store'
 import { COMMISSION_RATE, type AppUser } from '@/lib/domain-types'
-import { getVerificationAmount } from '@/lib/countries'
+import { getVerificationAmount, isCountryCode, toInternationalPhone } from '@/lib/countries'
+import { formatMoneyWithCurrency } from '@/lib/format-money'
+import { sendSms } from '@/lib/sms'
 
 // One-time welcome bonus credited on a user's FIRST confirmed deposit, in the
 // user's wallet currency. Override per-deployment with FIRST_DEPOSIT_BONUS.
@@ -39,9 +41,43 @@ export interface ApplyDepositResult {
   } | null
 }
 
+/**
+ * Fire-and-forget: text the user a "payment received" confirmation styled like
+ * a mobile-money transaction alert (amount, available balance, reference).
+ * Sent from the approved Plusebet sender ID — NOT impersonating any telco.
+ * Best-effort: any failure (no phone, SMS error, unsupported country) is
+ * logged and swallowed so it never affects the credited deposit.
+ */
+async function notifyDepositReceived(
+  user: AppUser,
+  amount: number,
+  reference: string,
+): Promise<void> {
+  try {
+    if (!user.phone || !isCountryCode(user.country)) return
+    const recipient = toInternationalPhone(user.country, user.phone)
+    if (!recipient) return
+
+    const received = formatMoneyWithCurrency(amount, user.currency)
+    const balance = formatMoneyWithCurrency(user.balance ?? 0, user.currency)
+    const message =
+      `Plusebet: Payment received. Amount: ${received}. ` +
+      `Available Balance: ${balance}. Ref: ${reference}. ` +
+      `Thank you for playing with Plusebet.`
+
+    const result = await sendSms(recipient, message)
+    if (!result.ok) {
+      console.error('[deposit-credit] payment-received SMS failed:', result.error)
+    }
+  } catch (e) {
+    console.error('[deposit-credit] payment-received SMS notify error:', e)
+  }
+}
+
 export async function applyDepositCredit(
   userId: string,
   amount: number,
+  opts: { reference?: string } = {},
 ): Promise<ApplyDepositResult | null> {
   // Need the user's country to know what verification threshold applies and
   // what currency to attribute the commission row to.
@@ -127,6 +163,13 @@ export async function applyDepositCredit(
       })
     }
   }
+
+  // Confirm receipt to the depositor (styled like a MoMo alert), using the
+  // final balance after any first-deposit bonus. Reference falls back to a
+  // generated deposit ref when the caller didn't pass the ledger reference.
+  const reference =
+    opts.reference || `PB-DEP-${userId.slice(0, 8).toUpperCase()}`
+  await notifyDepositReceived(user, amount, reference)
 
   return { user, isFirstDeposit: result.isFirst, commission }
 }

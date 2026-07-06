@@ -82,7 +82,7 @@ export async function verifyAndCreditMomo(reference: string): Promise<MomoCredit
       // Another poll / admin path already credited this reference.
       return { status: 'already-credited', ok: true, reference }
     }
-    await applyDepositCredit(pending.userId, pending.amount)
+    await applyDepositCredit(pending.userId, pending.amount, { reference })
   } catch (e) {
     console.error('[momo-credit] credit pipeline failed:', e)
     return { status: 'credit-failed', ok: false, reference }

@@ -94,7 +94,7 @@ export async function verifyAndCreditFlutterwave(
       // already ran the credit pipeline on this reference.
       return { status: 'already-credited', ok: true, reference }
     }
-    await applyDepositCredit(pending.userId, pending.amount)
+    await applyDepositCredit(pending.userId, pending.amount, { reference })
   } catch (e) {
     console.error('[flutterwave-credit] credit pipeline failed:', e)
     return { status: 'credit-failed', ok: false, reference }

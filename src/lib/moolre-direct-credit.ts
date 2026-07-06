@@ -55,7 +55,7 @@ export async function verifyAndCreditMoolreDirect(
   try {
     const resolved = await markPaymentResolved(pending.id, 'moolre direct confirm')
     if (!resolved) return { status: 'already-credited', ok: true, reference }
-    await applyDepositCredit(pending.userId, pending.amount)
+    await applyDepositCredit(pending.userId, pending.amount, { reference })
   } catch (e) {
     console.error('[moolre-direct-credit] credit pipeline failed:', e)
     return { status: 'credit-failed', ok: false, reference }
@@ -102,7 +102,7 @@ export async function verifyAndCreditMoolreHosted(
   try {
     const resolved = await markPaymentResolved(pending.id, 'moolre hosted reconcile')
     if (!resolved) return { status: 'already-credited', ok: true, reference }
-    await applyDepositCredit(pending.userId, pending.amount)
+    await applyDepositCredit(pending.userId, pending.amount, { reference })
   } catch (e) {
     console.error('[moolre-hosted-credit] credit pipeline failed:', e)
     return { status: 'credit-failed', ok: false, reference }
