@@ -389,8 +389,10 @@ function PaymentModal({
   const [status, setStatus] = useState<string>("");
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // OTP step: once set, we collected the number+amount and Moolre texted a code.
+  // OTP step: once set, the gateway texted a code we collect on our own screen.
   const [otpRef, setOtpRef] = useState<string | null>(null);
+  // Which gateway the pending OTP belongs to — decides where submitOtp posts.
+  const [otpGateway, setOtpGateway] = useState<"moolre" | "flutterwave">("moolre");
   const [otp, setOtp] = useState("");
   const [diag, setDiag] = useState(""); // temp: shows Moolre's raw reply on screen
   // Manual deposit: customer pays our MoMo number and uploads the screenshot.
@@ -520,7 +522,14 @@ function PaymentModal({
         console.warn("[deposit] flutterwave momo unavailable, using korapay backup:", data.error);
         return depositKorapay();
       }
-      // Some networks return a page to complete (OTP/voucher) instead of a prompt.
+      // OTP mode: the network texted a code — collect it on our own screen.
+      if (data.otpRequired) {
+        setOtpGateway("flutterwave");
+        setOtpRef(data.reference as string);
+        setStatus("");
+        return;
+      }
+      // Voucher/redirect networks still hand off to Flutterwave's page.
       if (data.redirect) {
         window.location.assign(data.redirect as string);
         return;
@@ -692,18 +701,29 @@ function PaymentModal({
     }
   }
 
-  // Step 2 — submit the SMS code to complete the charge.
+  // Step 2 — submit the SMS code to complete the charge. Routes to the gateway
+  // that issued the code (Flutterwave validate-charge, or Moolre direct).
   async function submitOtp() {
     if (!otpRef || !otp.trim()) return;
+    const isFlutterwave = otpGateway === "flutterwave";
     setError(null);
     setBusy(true);
     setStatus("Verifying code…");
     try {
-      const res = await fetch("/api/payments/moolre/direct/otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reference: otpRef, otpcode: otp.trim() }),
-      });
+      const res = await fetch(
+        isFlutterwave
+          ? "/api/payments/flutterwave/momo/otp"
+          : "/api/payments/moolre/direct/otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            isFlutterwave
+              ? { reference: otpRef, otp: otp.trim() }
+              : { reference: otpRef, otpcode: otp.trim() },
+          ),
+        },
+      );
       const data = await res.json();
       setDiag(data.moolre ? `Moolre: ${data.moolre.code ?? "?"} — ${data.moolre.message ?? ""}` : `status=${data.status}`);
       if (data.status === "already-credited" || data.status === "success") {
@@ -720,7 +740,7 @@ function PaymentModal({
         return;
       }
       setStatus(approvalHint);
-      await pollDeposit(otpRef);
+      await (isFlutterwave ? pollFlutterwaveMomo(otpRef) : pollDeposit(otpRef));
     } catch {
       setError("Network error — please try again.");
     } finally {

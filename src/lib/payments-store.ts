@@ -177,6 +177,27 @@ export async function findPaymentByReference(
 }
 
 /**
+ * Shallow-merge extra keys into a payment row's metadata (keyed by reference).
+ * Used to stash gateway state mid-flow — e.g. Flutterwave's flw_ref so the OTP
+ * step can recover it. Returns the updated record, or null if not found.
+ */
+export async function mergePaymentMetadata(
+  reference: string,
+  patch: Record<string, unknown>,
+): Promise<PaymentRecord | null> {
+  const existing = await findPaymentByReference(reference)
+  if (!existing) return null
+  const { data, error } = await supabaseServer()
+    .from('payments')
+    .update({ metadata: { ...existing.metadata, ...patch } })
+    .eq('reference', reference)
+    .select('*')
+    .maybeSingle()
+  if (error) throw new Error(`payments.mergeMetadata: ${error.message}`)
+  return data ? rowToRecord(data as PaymentRow) : null
+}
+
+/**
  * Atomically flip a non-success payment row to success and stamp who
  * resolved it. The `.in('status', …)` filter means only ONE concurrent
  * caller wins — if the row is already success, no rows are updated and

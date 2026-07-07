@@ -105,6 +105,10 @@ export interface FlutterwaveChargeResult {
   status: string
   /** Set when the network needs the customer sent to a page (OTP/voucher). */
   redirect: string | null
+  /** Authorization mode Flutterwave asked for: 'otp' | 'redirect' | 'pin' | … */
+  mode: string | null
+  /** Flutterwave's own reference — required to validate an OTP charge. */
+  flwRef: string | null
   message?: string
 }
 
@@ -142,7 +146,7 @@ export async function chargeMobileMoneyGhana(input: {
   const body = (await res.json().catch(() => ({}))) as {
     status?: string
     message?: string
-    data?: { status?: string }
+    data?: { status?: string; flw_ref?: string; id?: number }
     meta?: { authorization?: { redirect?: string; mode?: string } }
   }
   if (!res.ok || body.status !== 'success') {
@@ -153,6 +157,52 @@ export async function chargeMobileMoneyGhana(input: {
   return {
     status: body.data?.status ?? 'pending',
     redirect: body.meta?.authorization?.redirect ?? null,
+    mode: body.meta?.authorization?.mode ?? null,
+    flwRef: body.data?.flw_ref ?? (body.data?.id != null ? String(body.data.id) : null),
+    message: body.message,
+  }
+}
+
+export interface FlutterwaveValidateResult {
+  /** True when Flutterwave accepted the code (charge now pending/successful). */
+  ok: boolean
+  /** Inner data.status: 'successful' | 'pending' | 'failed' | … */
+  status: string
+  message?: string
+}
+
+/**
+ * Submit the OTP for a mobile-money charge that returned authorization
+ * mode 'otp'. On success the collection proceeds and the caller should poll
+ * verifyByReference() as usual. A rejected/expired code comes back ok:false
+ * so the UI can ask the customer to re-enter it.
+ */
+export async function validateCharge(input: {
+  flwRef: string
+  otp: string
+}): Promise<FlutterwaveValidateResult> {
+  const res = await fetch(`${FLW_BASE}/validate-charge`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${getSecretKey()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: 'mobile_money_ghana',
+      flw_ref: input.flwRef,
+      otp: input.otp,
+    }),
+    cache: 'no-store',
+  })
+  const body = (await res.json().catch(() => ({}))) as {
+    status?: string
+    message?: string
+    data?: { status?: string }
+  }
+  const ok = res.ok && body.status === 'success'
+  return {
+    ok,
+    status: body.data?.status ?? (ok ? 'pending' : 'failed'),
     message: body.message,
   }
 }

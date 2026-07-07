@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { findUserById } from '@/lib/users-store'
-import { recordPayment } from '@/lib/payments-store'
+import { recordPayment, mergePaymentMetadata } from '@/lib/payments-store'
 import { chargeMobileMoneyGhana, type GhanaMomoNetwork } from '@/lib/flutterwave'
 import { getMinFirstDeposit } from '@/lib/countries'
 
@@ -94,12 +94,26 @@ export async function POST(request: Request) {
       network,
       fullname: user.name,
     })
+
+    // OTP mode: the network texted the customer a code. Stash Flutterwave's
+    // flw_ref on the pending row so /momo/otp can validate the code, and tell
+    // the frontend to show its own inline OTP field (no redirect off-site).
+    if (charge.mode === 'otp' && charge.flwRef) {
+      await mergePaymentMetadata(txRef, { flwRef: charge.flwRef }).catch((e) =>
+        console.error('[flutterwave/momo/start] flwRef stash failed:', e),
+      )
+      return NextResponse.json(
+        { reference: txRef, status: charge.status, otpRequired: true },
+        { status: 201 },
+      )
+    }
+
     return NextResponse.json(
       {
         reference: txRef,
         status: charge.status,
-        // If the network needs a page (OTP/voucher) the frontend redirects here;
-        // otherwise it polls /momo/status while the phone prompt is approved.
+        // Voucher/redirect networks still hand off to Flutterwave's page;
+        // otherwise the frontend polls /momo/status during the phone prompt.
         redirect: charge.redirect,
       },
       { status: 201 },
