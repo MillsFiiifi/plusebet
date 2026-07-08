@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, ArrowDownToLine, History, Receipt, X, Check, Loader2, LogOut, KeyRound } from "lucide-react";
+import { Plus, ArrowDownToLine, History, Receipt, X, Check, Loader2, LogOut, KeyRound, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 import { formatMoneyWithCurrency } from "@/lib/format-money";
@@ -394,6 +394,9 @@ function PaymentModal({
   // Which gateway the pending OTP belongs to — decides where submitOtp posts.
   const [otpGateway, setOtpGateway] = useState<"moolre" | "flutterwave">("moolre");
   const [otp, setOtp] = useState("");
+  // When a gateway needs the customer on its own secure page, we show a clear
+  // hand-off screen (with this URL) instead of silently redirecting them.
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const [diag, setDiag] = useState(""); // temp: shows Moolre's raw reply on screen
   // Manual deposit: customer pays our MoMo number and uploads the screenshot.
   const [file, setFile] = useState<File | null>(null);
@@ -529,9 +532,11 @@ function PaymentModal({
         setStatus("");
         return;
       }
-      // Voucher/redirect networks still hand off to Flutterwave's page.
+      // Voucher/redirect networks still hand off to Flutterwave's page — show a
+      // clear branded interstitial first so the customer isn't confused.
       if (data.redirect) {
-        window.location.assign(data.redirect as string);
+        setRedirectUrl(data.redirect as string);
+        setStatus("");
         return;
       }
       setStatus("Approve the prompt on your phone to complete your deposit.");
@@ -789,6 +794,30 @@ function PaymentModal({
               {type === "deposit" ? "We've received your payment proof. Your balance is credited once we confirm it — usually within minutes." : "Funds arrive after the operator processes your request."}
             </p>
             <button onClick={onClose} className="mt-6 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-white text-sm">Done</button>
+          </div>
+        ) : redirectUrl ? (
+          <div className="p-6 flex flex-col items-center text-center">
+            <div className="grid place-items-center w-16 h-16 rounded-full grad-violet-pink mb-4 shadow-[0_10px_36px_-8px_rgba(139,92,246,.6)]">
+              <ShieldCheck size={30} className="text-white" />
+            </div>
+            <h4 className="font-display font-extrabold text-[17px]">Approve your payment</h4>
+            <p className="text-[13px] text-[var(--color-ink-dim)] mt-2 leading-relaxed">
+              Tap continue to approve your {amt > 0 ? money(amt) : ""} Mobile Money deposit on a
+              <span className="font-semibold text-white"> secure payment page</span>.
+              After you approve, you&apos;ll come right back here and your balance updates automatically.
+            </p>
+            <button
+              onClick={() => window.location.assign(redirectUrl)}
+              className="mt-6 w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white shadow-[0_10px_30px_-8px_rgba(236,72,153,.5)] active:scale-[.99] transition"
+            >
+              Continue to approve
+            </button>
+            <button
+              onClick={() => { setRedirectUrl(null); setError(null); setStatus(""); }}
+              className="mt-2 w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-white text-[13px]"
+            >
+              Cancel
+            </button>
           </div>
         ) : otpRef ? (
           <div className="p-5 space-y-4">
