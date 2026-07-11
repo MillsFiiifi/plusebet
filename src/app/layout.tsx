@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { PwaRegister } from "@/components/pwa-register";
 
 const outfit = Outfit({
   variable: "--font-display",
@@ -24,6 +25,20 @@ export const metadata: Metadata = {
   title: "Plusebet — Premium Sports Betting",
   description:
     "Plusebet — premium international sports betting. Live odds, mobile-money payouts, verified tickets.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "Plusebet",
+  appleWebApp: {
+    capable: true,
+    title: "Plusebet",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -43,7 +58,10 @@ export default function RootLayout({
       lang="en"
       className={`${outfit.variable} ${inter.variable} ${jetbrains.variable} antialiased`}
     >
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <PwaRegister />
+        {children}
+      </body>
     </html>
   );
 }
