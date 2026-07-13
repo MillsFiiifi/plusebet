@@ -521,9 +521,9 @@ function PaymentModal({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.reference) {
-        // Primary failed — fall back to the backup gateway (Korapay).
-        console.warn("[deposit] flutterwave momo unavailable, using korapay backup:", data.error);
-        return depositKorapay();
+        console.error("[deposit] flutterwave momo start failed:", data.error);
+        setError("We couldn't start your Mobile Money deposit right now. Please try again in a moment.");
+        return;
       }
       // OTP mode: the network texted a code — collect it on our own screen.
       if (data.otpRequired) {
@@ -542,15 +542,15 @@ function PaymentModal({
       setStatus("Approve the prompt on your phone to complete your deposit.");
       await pollFlutterwaveMomo(data.reference);
     } catch {
-      return depositKorapay();
+      setError("Network error — please try again.");
     } finally {
       setBusy(false);
     }
   }
 
-  // Flutterwave (GH + NG) is the MAIN gateway: mint a hosted-checkout URL and
-  // send the customer there. If Flutterwave can't start (down / not configured),
-  // fall back to Korapay automatically so deposits keep working.
+  // Flutterwave (GH + NG) is the ONLY gateway: mint a hosted-checkout URL and
+  // send the customer there. If Flutterwave can't start, show a clear error —
+  // no Korapay fallback (that merchant is deactivated).
   async function depositFlutterwave() {
     setError(null);
     setBusy(true);
@@ -566,12 +566,12 @@ function PaymentModal({
         window.location.assign(data.url);
         return;
       }
-      // Primary failed — fall back to the backup gateway (Korapay).
-      console.warn("[deposit] flutterwave unavailable, using korapay backup:", data.error);
-      return depositKorapay();
+      console.error("[deposit] flutterwave start failed:", data.error);
+      setError("We couldn't open the secure checkout right now. Please try again in a moment.");
+      setBusy(false);
     } catch {
-      // Network error on the primary — try the backup before giving up.
-      return depositKorapay();
+      setError("Network error — please try again.");
+      setBusy(false);
     }
   }
 
