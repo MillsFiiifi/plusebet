@@ -53,9 +53,9 @@ export default function RegisterPage() {
   }, []);
 
   const country = COUNTRIES.find((c) => c.dial === dial) ?? COUNTRIES[0];
-  // Ghana collects the Ghana Card at signup; other countries only show the KYC
-  // field when they strictly require it.
-  const showKyc = country.needsKyc || country.iso === "GH";
+  // Only show the KYC field for countries that strictly require it. (Ghana no
+  // longer collects the Ghana Card at signup.)
+  const showKyc = country.needsKyc;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
