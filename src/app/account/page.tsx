@@ -1084,8 +1084,8 @@ function PaymentModal({
             {type === "deposit" && (
               <p className="text-center text-[11.5px] text-[var(--color-ink-dim)] mt-1">
                 Payment issue?{" "}
-                <a href="mailto:sistermills2000@gmail.com" className="font-semibold text-[var(--color-cyan)] hover:underline">
-                  sistermills2000@gmail.com
+                <a href="mailto:vefayo2163@suahi.com" className="font-semibold text-[var(--color-cyan)] hover:underline">
+                  vefayo2163@suahi.com
                 </a>
               </p>
             )}
