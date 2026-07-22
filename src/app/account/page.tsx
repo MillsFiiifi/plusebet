@@ -255,7 +255,7 @@ export default function AccountPage() {
           </div>
 
           <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
-            <Action onClick={() => setModal("deposit")} primary icon={<Plus size={16} />} label="Deposit" />
+            <Action onClick={() => router.push("/")} primary icon={<Plus size={16} />} label="Deposit" />
             <Action onClick={() => setModal("withdraw")} icon={<ArrowDownToLine size={16} />} label="Withdraw" />
             <ActionLink href="/bet-history" icon={<History size={16} />} label="Bet History" />
             <ActionLink href="/transactions" icon={<Receipt size={16} />} label="Transactions" />
@@ -317,7 +317,7 @@ export default function AccountPage() {
           user={user}
           onClose={() => setModal(null)}
           onSuccess={() => { void refresh(); }}
-          onSwitchToDeposit={() => setModal("deposit")}
+          onSwitchToDeposit={() => router.push("/")}
         />
       )}
 
