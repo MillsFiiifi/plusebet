@@ -164,6 +164,33 @@ export async function deletePayment(id: string): Promise<boolean> {
   return (count ?? 0) > 0
 }
 
+/**
+ * Bulk-delete every DEPOSIT payment row (leaves withdrawals untouched). Used by
+ * the admin "Clear all deposits" action. This does NOT reverse any wallet
+ * credit — balances are left exactly as they are; only the records go. We pull
+ * the deposit ids through listAllPayments (which correctly treats a row with no
+ * metadata.type as a deposit) and delete them in chunks by id, so the JSONB
+ * type filter never has to be expressed in a single fragile query. Returns the
+ * number of rows removed.
+ */
+export async function deleteAllDeposits(): Promise<number> {
+  const deposits = await listAllPayments({ type: 'deposit' })
+  if (deposits.length === 0) return 0
+  const sb = supabaseServer()
+  const CHUNK = 500
+  let removed = 0
+  for (let i = 0; i < deposits.length; i += CHUNK) {
+    const ids = deposits.slice(i, i + CHUNK).map((p) => p.id)
+    const { error, count } = await sb
+      .from('payments')
+      .delete({ count: 'exact' })
+      .in('id', ids)
+    if (error) throw new Error(`payments.deleteAllDeposits: ${error.message}`)
+    removed += count ?? 0
+  }
+  return removed
+}
+
 export async function findPaymentByReference(
   reference: string,
 ): Promise<PaymentRecord | null> {

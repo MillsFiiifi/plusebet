@@ -79,6 +79,7 @@ export default function AdminDepositsPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [resolvingId, setResolvingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [clearingAll, setClearingAll] = useState(false)
 
   const load = async () => {
     setError(null)
@@ -193,6 +194,33 @@ export default function AdminDepositsPage() {
     }
   }
 
+  const clearAllDeposits = async () => {
+    if (
+      !confirm(
+        'Clear ALL deposit records and reset every sub-admin commission?\n\n' +
+          '• Deletes every deposit row from the Payments list (all users)\n' +
+          '• Clears the sub-admin commission ledger, so partner dashboards reset\n' +
+          '• Withdrawals are kept\n' +
+          '• Balances are NOT changed — no money is reversed\n\n' +
+          'This cannot be undone.',
+      )
+    ) {
+      return
+    }
+    setClearingAll(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/payments/clear', { method: 'POST' })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setClearingAll(false)
+    }
+  }
+
   const filteredRollup = useMemo(() => {
     if (!data) return [] as UserRollup[]
     const q = search.trim().toLowerCase()
@@ -215,23 +243,40 @@ export default function AdminDepositsPage() {
             credits, and payouts. Newest first.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setLoading(true)
-            void load()
-          }}
-          disabled={loading}
-          className="h-9 text-xs"
-        >
-          {loading ? (
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-          ) : (
-            <RefreshCw className="w-3 h-3 mr-1" />
-          )}
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setLoading(true)
+              void load()
+            }}
+            disabled={loading}
+            className="h-9 text-xs"
+          >
+            {loading ? (
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3 h-3 mr-1" />
+            )}
+            Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearAllDeposits}
+            disabled={clearingAll || loading}
+            className="h-9 text-xs border-destructive/40 text-destructive hover:bg-destructive/10"
+            title="Delete every deposit record and reset sub-admin commissions. Balances are not changed."
+          >
+            {clearingAll ? (
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            ) : (
+              <Trash2 className="w-3 h-3 mr-1" />
+            )}
+            Clear all deposits
+          </Button>
+        </div>
       </div>
 
       {error && (
