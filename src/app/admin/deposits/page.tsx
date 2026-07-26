@@ -147,7 +147,7 @@ export default function AdminDepositsPage() {
   const resolvePayment = async (paymentId: string, userName: string, amount: number, currency: string) => {
     if (
       !confirm(
-        `Credit ${userName} ${currency} ${formatMoney(amount, currency)} and mark this attempt as resolved?\n\nMake sure the user actually paid — this cannot be undone here.`,
+        `Re-check this payment with the gateway and credit ${userName} ${currency} ${formatMoney(amount, currency)} only if it confirms the payment succeeded?\n\nIf the gateway says the payment failed or is still pending, nothing is credited.`,
       )
     ) {
       return
@@ -535,7 +535,7 @@ export default function AdminDepositsPage() {
                             }
                             disabled={resolvingId === d.id}
                             className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
-                            title="Credit user this amount and mark this Moolre attempt as resolved"
+                            title="Re-check this payment with the gateway and credit only if it confirms the payment succeeded"
                           >
                             {resolvingId === d.id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
