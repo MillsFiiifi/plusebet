@@ -38,27 +38,30 @@ export function SupportChat() {
 
   return (
     <>
+      {/* Neutral surface, not the accent. On mobile this button sits directly
+          beside the accent bet-slip bar; two different greens there would
+          compete, and support is not the primary action on any screen.
+          Offset clears the 54px docked nav plus the slip bar above it. */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-[76px] xl:bottom-6 right-4 xl:right-6 z-40 grid place-items-center w-[52px] h-[52px] rounded-full grad-violet-pink text-white shadow-[0_12px_36px_-8px_rgba(236,72,153,.7)] hover:scale-105 active:scale-95 transition"
+        className="fixed bottom-[118px] xl:bottom-6 right-3 xl:right-6 z-30 grid place-items-center w-12 h-12 rounded-full bg-[var(--color-surface-3)] border border-[var(--color-line-2)] text-[var(--color-ink)] hover:bg-[var(--color-elevated)] active:scale-95 transition-colors shadow-lg"
         aria-label="Support chat"
       >
-        <span className="absolute inset-0 rounded-full grad-violet-pink animate-ping opacity-20" />
-        {open ? <X size={22} /> : <MessageCircle size={22} />}
+        {open ? <X size={20} /> : <MessageCircle size={20} />}
       </button>
 
       {open && (
-        <div className="fixed bottom-[140px] xl:bottom-[88px] right-4 xl:right-6 z-40 w-[min(370px,calc(100vw-2rem))] h-[min(540px,70dvh)] card flex flex-col overflow-hidden animate-rise shadow-2xl">
+        <div className="fixed bottom-[176px] xl:bottom-[84px] right-3 xl:right-6 z-40 w-[min(360px,calc(100vw-1.5rem))] h-[min(520px,64dvh)] card flex flex-col overflow-hidden animate-rise shadow-2xl">
           {/* header */}
-          <div className="flex items-center gap-3 px-4 py-3.5 bg-[var(--color-bg-2)] border-b border-[var(--color-line)]">
-            <div className="relative grid place-items-center w-9 h-9 rounded-full grad-violet-pink text-white">
-              <MessageCircle size={18} />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[var(--color-emerald)] border-2 border-[var(--color-bg-2)]" />
+          <div className="flex items-center gap-2.5 px-3.5 py-3 bg-[var(--color-bg-2)] border-b border-[var(--color-line)]">
+            <div className="relative grid place-items-center w-8 h-8 rounded-full bg-[var(--color-surface-3)] text-[var(--color-ink-dim)]">
+              <MessageCircle size={16} />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] border-2 border-[var(--color-bg-2)]" />
             </div>
             <div>
-              <div className="font-display font-bold text-[14px]">Plusebet Support</div>
-              <div className="flex items-center gap-1.5 text-[10.5px] text-[var(--color-emerald)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-emerald)]" /> Online · Replies instantly
+              <div className="font-display font-bold text-[13.5px]">Plusebet Support</div>
+              <div className="flex items-center gap-1.5 text-[10.5px] text-[var(--color-accent)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" /> Online · Replies instantly
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="ml-auto text-[var(--color-ink-faint)] hover:text-white">
@@ -73,7 +76,7 @@ export function SupportChat() {
                 <div
                   className={
                     m.from === "me"
-                      ? "grad-violet-pink text-white rounded-2xl rounded-br-md px-3.5 py-2.5 text-[13px] max-w-[80%]"
+                      ? "bg-[var(--color-surface-3)] border border-[var(--color-line-2)] text-[var(--color-ink)] rounded-2xl rounded-br-md px-3.5 py-2.5 text-[13px] max-w-[80%]"
                       : "bg-[var(--color-surface-2)] border border-[var(--color-line)] rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] max-w-[85%] text-[var(--color-ink)]"
                   }
                 >
@@ -100,11 +103,14 @@ export function SupportChat() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send(input)}
               placeholder="Type a message…"
-              className="flex-1 bg-[var(--color-surface-2)] border border-[var(--color-line)] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[var(--color-violet)]/50"
+              aria-label="Message"
+              className="flex-1 min-w-0 bg-[var(--color-surface-2)] border border-[var(--color-line)] rounded-[var(--radius-ctl)] px-3 py-2.5 text-[13px] outline-none focus:border-[var(--color-accent)] transition-colors"
             />
+            {/* Send is the primary action inside this panel, so it earns the accent here. */}
             <button
               onClick={() => send(input)}
-              className="grid place-items-center w-10 h-10 rounded-xl grad-violet-pink text-white shrink-0 active:scale-95 transition"
+              aria-label="Send message"
+              className="grid place-items-center w-10 h-10 rounded-[var(--radius-ctl)] btn-primary shrink-0 active:scale-95 transition"
             >
               <Send size={16} />
             </button>

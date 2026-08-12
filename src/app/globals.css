@@ -1,138 +1,157 @@
 @import "tailwindcss";
 
 /* ============================================================
-   PLUSEBET — Design System
-   Premium dark sports-betting aesthetic
+   PLUSEBET — Design System v2
+   Sportsbook dark. ONE accent. High density.
+
+   THE RULE THAT MAKES THIS WORK:
+   Accent green is reserved for exactly two things —
+     1. a SELECTED odd
+     2. the ONE primary action on screen
+   Nothing else may be green. If everything is the accent,
+   nothing is, and on a sportsbook the selected odd is the
+   single most important pixel on the page.
+
+   Semantic colour is limited to three:
+     accent  = your pick / your money / a win
+     loss    = lost, negative, live (urgency)
+     warn    = pending, awaiting settlement
+   Everything else is neutral grey. That's the whole palette.
    ============================================================ */
 
 @theme {
-  /* Surfaces */
-  --color-bg: #05060e;
-  --color-bg-2: #080a16;
-  --color-surface: #0c0f1f;
-  --color-surface-2: #11152a;
-  --color-surface-3: #161b35;
-  --color-elevated: #1a2040;
+  /* ---- Surfaces (near-black, slightly green-shifted) ---- */
+  --color-bg: #0a0d0c;
+  --color-bg-2: #0e1211;
+  --color-surface: #121716;
+  --color-surface-2: #18201e;
+  --color-surface-3: #212b28;
+  --color-elevated: #2a3532;
 
-  /* Borders */
-  --color-line: rgba(255, 255, 255, 0.08);
-  --color-line-2: rgba(255, 255, 255, 0.12);
+  /* ---- Borders ---- */
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-line-2: rgba(255, 255, 255, 0.14);
 
-  /* Text */
-  --color-ink: #f8fafc;
-  --color-ink-dim: #94a3b8;
-  --color-ink-faint: #64748b;
+  /* ---- Text ---- */
+  --color-ink: #ffffff;
+  --color-ink-dim: #9aa5a1;
+  --color-ink-faint: #6b7873;
 
-  /* Brand */
-  --color-violet: #8b5cf6;
-  --color-pink: #ec4899;
-  --color-cyan: #22d3ee;
-  --color-amber: #fbbf24;
-  --color-emerald: #34d399;
-  --color-rose: #f43f5e;
-  --color-sky: #38bdf8;
+  /* ---- THE accent ---- */
+  --color-accent: #00e27a;
+  --color-accent-hi: #3bff9c; /* hover only */
+  --color-accent-ink: #04120b; /* text ON accent — never white */
 
-  /* Fonts */
-  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-  --font-body: var(--font-body), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, monospace;
+  /* ---- Semantic ---- */
+  --color-win: #00e27a; /* money in / won — same as accent, deliberately */
+  --color-loss: #ff4d6a; /* lost / negative / live */
+  --color-warn: #f5b93c; /* pending only */
 
-  /* Radii */
-  --radius-card: 14px;
+  /* ------------------------------------------------------------
+     Legacy aliases.
+     The old palette had six competing brand colours. Rather than
+     touch 300+ call sites across payment-critical files, they are
+     collapsed onto the three semantic roles above. This is what
+     retires violet/pink/cyan as accents everywhere at once.
+     ------------------------------------------------------------ */
+  --color-violet: var(--color-accent);
+  --color-pink: var(--color-accent);
+  --color-cyan: var(--color-accent);
+  --color-emerald: var(--color-win);
+  --color-sky: var(--color-accent);
+  --color-amber: var(--color-warn);
+  --color-rose: var(--color-loss);
 
-  /* Animations */
+  /* ---- Fonts ----
+     Source variables are named distinctly from the theme tokens
+     (--font-sans-src, not --font-body) so these never self-reference.
+     Two variable families total, down from three static-weight ones. */
+  --font-display: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-src), ui-monospace, monospace;
+
+  /* ---- Radii — one scale, no ad-hoc values ---- */
+  --radius-card: 12px;
+  --radius-ctl: 8px;
+
+  /* ---- Density ---- */
+  --row-h: 58px;
+
+  /* ---- Animation ---- */
   --animate-shimmer: shimmer 2.4s linear infinite;
-  --animate-pulse-dot: pulseDot 1.8s ease-in-out infinite;
   --animate-ticker: ticker 38s linear infinite;
-  --animate-float: float 7s ease-in-out infinite;
+  --animate-rise: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-spin-slow: spin 1s linear infinite;
-  --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-orb: orb 14s ease-in-out infinite;
 }
 
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
-}
 @keyframes ticker {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
 @keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes orb {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.95); }
+/* Kept so legacy `animate-[orb_…]`/`float` call sites degrade to a no-op
+   rather than an undefined animation. The orbs themselves are gone. */
+@keyframes orb { 0%, 100% { transform: none; } }
+@keyframes float { 0%, 100% { transform: none; } }
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
 /* ---- Base ---- */
 * {
   border-color: var(--color-line);
-  /* Kill the grey/blue flash when tapping on mobile — feels app-native. */
   -webkit-tap-highlight-color: transparent;
 }
 
 html {
   scroll-behavior: smooth;
-  /* Native form controls (checkboxes, range) pick up the brand colour. */
-  accent-color: var(--color-violet);
-  /* Keep sticky headers from covering anchored content. */
+  accent-color: var(--color-accent);
   scroll-padding-top: 80px;
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(139, 92, 246, 0.12), transparent 60%),
-    radial-gradient(900px 500px at 0% 10%, rgba(34, 211, 238, 0.08), transparent 55%),
-    var(--color-bg);
+  /* Flat. The old build painted two large radial gradients here; on the
+     mid-range Android this audience actually uses, a full-viewport gradient
+     repaints on every scroll. Solid colour is free. */
+  background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-body);
+  font-size: 13px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
   min-height: 100dvh;
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.35);
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
-/* Accessible keyboard focus — uses the brand violet, no new colours. */
 :focus-visible {
-  outline: 2px solid rgba(139, 92, 246, 0.75);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 :focus:not(:focus-visible) { outline: none; }
 
-/* Interactive elements feel clickable + give tactile press feedback. */
 button:not(:disabled),
 a,
 [role="button"]:not([aria-disabled="true"]) {
   cursor: pointer;
 }
-button:not(:disabled):active {
-  transform: translateY(0.5px);
-}
 
-/* Media shouldn't be draggable/selectable like text. */
 img, svg { user-select: none; -webkit-user-drag: none; }
 
-/* Respect users who prefer less motion. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -143,171 +162,254 @@ img, svg { user-select: none; -webkit-user-drag: none; }
 }
 
 /* ---- Scrollbar ---- */
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.09);
   border-radius: 99px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.16); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); background-clip: padding-box; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ============================================================
-   Reusable component utilities
+   Utilities
    ============================================================ */
 
 @utility font-display { font-family: var(--font-display); }
 @utility font-mono { font-family: var(--font-mono); }
 
-/* Brand gradient text */
-.grad-text {
-  background: linear-gradient(135deg, #a78bfa, #ec4899 55%, #fb923c);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* Tabular numerals. Non-negotiable on a betting site: odds and money
+   must align in a column and must not reflow as digits change. */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
-.grad-violet-pink {
-  background: linear-gradient(135deg, var(--color-violet), var(--color-pink));
-}
-.grad-cyan {
-  background: linear-gradient(135deg, #06b6d4, #22d3ee);
-}
-.grad-gold {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-}
-.grad-emerald {
-  background: linear-gradient(135deg, #059669, #34d399);
-}
-
-/* Card */
+/* ---- Surface ---- */
 .card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)) , var(--color-surface);
+  background: var(--color-surface);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
 }
 
-.card-hover {
-  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-}
+.card-hover { transition: border-color 0.15s, background-color 0.15s; }
 .card-hover:hover {
-  border-color: rgba(139, 92, 246, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px -12px rgba(139, 92, 246, 0.35);
+  border-color: var(--color-line-2);
+  background: var(--color-surface-2);
 }
 
-/* Glow ring around focus / active */
-.glow-violet { box-shadow: 0 0 0 1px rgba(139,92,246,.5), 0 8px 30px -8px rgba(139,92,246,.5); }
-
-/* Section title bar */
-.title-bar {
-  width: 4px;
-  height: 18px;
-  border-radius: 99px;
-  background: linear-gradient(180deg, var(--color-violet), var(--color-pink));
-}
-
-/* Odds button */
+/* ============================================================
+   ODDS BUTTON — the most important control in the product.
+   Rest state is quiet so a wall of odds stays scannable; the
+   selected state is the loudest thing on the page.
+   ============================================================ */
 .odds-btn {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   background: var(--color-surface-2);
   border: 1px solid var(--color-line);
-  border-radius: 9px;
+  border-radius: var(--radius-ctl);
   color: var(--color-ink);
-  transition: all 0.15s;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
   position: relative;
-  overflow: hidden;
+  /* Never below the 44px touch target on mobile. */
+  min-height: 42px;
 }
-.odds-btn:hover {
-  border-color: rgba(139, 92, 246, 0.5);
+.odds-btn:hover:not(:disabled):not([data-active="true"]) {
   background: var(--color-surface-3);
+  border-color: var(--color-line-2);
 }
-.odds-btn:active { transform: scale(0.96); }
+.odds-btn:active:not(:disabled) { transform: scale(0.97); }
 .odds-btn[data-active="true"] {
-  background: linear-gradient(135deg, var(--color-violet), var(--color-pink));
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 6px 20px -6px rgba(236, 72, 153, 0.6);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
 }
+.odds-btn[data-active="true"] * { color: var(--color-accent-ink) !important; }
 
-/* Pill / chip */
+/* ---- Chip / pill ---- */
 .chip {
-  font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.04em;
   font-weight: 600;
   border-radius: 99px;
   border: 1px solid var(--color-line);
   background: var(--color-surface-2);
   color: var(--color-ink-dim);
-  transition: all 0.15s;
+  transition: color 0.12s, border-color 0.12s, background-color 0.12s;
+  white-space: nowrap;
 }
 .chip:hover:not([data-active="true"]) {
   border-color: var(--color-line-2);
   color: var(--color-ink);
 }
 .chip[data-active="true"] {
-  background: linear-gradient(135deg, var(--color-violet), var(--color-pink));
-  color: #fff;
-  border-color: transparent;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent);
+}
+.chip[data-active="true"] * { color: var(--color-accent-ink); }
+
+/* ---- Primary action ----
+   Legacy names kept so payment-critical files need no edits; they now
+   render as one flat accent fill. `color` is set here (unlayered CSS
+   beats Tailwind's layered `text-white`) because white on accent green
+   is ~1.8:1 and unreadable — accent-ink is ~12:1. */
+.grad-violet-pink,
+.grad-emerald,
+.grad-cyan,
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent);
+}
+.grad-violet-pink:hover:not(:disabled),
+.grad-emerald:hover:not(:disabled),
+.grad-cyan:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hi);
+}
+/* Icons/spans inside inherit the dark ink rather than the white they ask for. */
+.grad-violet-pink *,
+.grad-emerald *,
+.grad-cyan *,
+.btn-primary * { color: var(--color-accent-ink); }
+
+.grad-gold {
+  background: var(--color-warn);
+  color: #1a1204;
+}
+.grad-gold * { color: #1a1204; }
+
+/* Was a three-stop gradient on text. Now simply the accent — a payout
+   figure should read as money, not as decoration. */
+.grad-text {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: var(--color-accent);
 }
 
-/* Mono number */
-.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* Legacy glow → a flat accent ring. */
+.glow-violet { box-shadow: 0 0 0 1px var(--color-accent); }
 
-/* Live pulse dot */
+/* Legacy gradient-border card → a plain elevated surface. */
+.grad-border {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+.grad-border::before { content: none; }
+
+/* Section title bar */
+.title-bar {
+  width: 3px;
+  height: 15px;
+  border-radius: 99px;
+  background: var(--color-accent);
+}
+
+/* ---- Live indicator — the only red that pulses ---- */
 .live-dot {
-  width: 7px; height: 7px; border-radius: 99px;
-  background: var(--color-rose);
-  box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.6);
-  animation: ringPulse 1.6s ease-out infinite;
-}
-@keyframes ringPulse {
-  0% { box-shadow: 0 0 0 0 rgba(244,63,94,.55); }
-  70% { box-shadow: 0 0 0 7px rgba(244,63,94,0); }
-  100% { box-shadow: 0 0 0 0 rgba(244,63,94,0); }
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--color-loss);
+  animation: pulseDot 1.6s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
-/* Glass top bar */
+/* ---- Sticky bars ----
+   Solid, not translucent. One backdrop-filter layer costs a full-screen
+   composite per frame while scrolling; this UI had three stacked. */
 .glass {
-  background: rgba(8, 10, 22, 0.72);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  background: var(--color-bg-2);
 }
 
-/* Skeleton shimmer */
+/* ---- Skeleton ---- */
 .shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,.03) 25%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.03) 75%);
+  background: linear-gradient(90deg, rgba(255,255,255,.03) 25%, rgba(255,255,255,.07) 50%, rgba(255,255,255,.03) 75%);
   background-size: 200% 100%;
   animation: var(--animate-shimmer);
 }
 
-/* Animated gradient border */
-.grad-border {
-  position: relative;
-  background: var(--color-surface);
-  border-radius: var(--radius-card);
-}
-.grad-border::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(139,92,246,.6), rgba(236,72,153,.3), rgba(34,211,238,.5));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
 .animate-rise { animation: var(--animate-rise); }
 
-/* hide native number spinners */
+/* ============================================================
+   Compact fixture list — the density win.
+   A league group is a header + rows; rows share one grid so the
+   odds columns line up down the whole page, which is what makes
+   a long list scannable.
+   ============================================================ */
+.league-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-line);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.fixture-row {
+  display: grid;
+  /* time | teams | 3 odds | markets */
+  grid-template-columns: 46px minmax(0, 1fr) repeat(3, 58px) 44px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--color-line);
+  transition: background-color 0.12s;
+}
+.fixture-row:last-child { border-bottom: none; }
+.fixture-row:hover { background: var(--color-surface-2); }
+
+/* Column key for a league group. Same track sizing as .fixture-row so the
+   1 / X / 2 labels sit exactly over their columns. Its own class rather than
+   Tailwind's `hidden sm:grid`, because this unlayered CSS would override the
+   layered `hidden` utility and the header would leak onto mobile. */
+.fixture-head {
+  display: none;
+  grid-template-columns: 46px minmax(0, 1fr) repeat(3, 58px) 44px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--color-bg-2);
+  border-bottom: 1px solid var(--color-line);
+}
+@media (min-width: 640px) {
+  .fixture-head { display: grid; }
+}
+
+/* Below `sm` the odds row wraps under the teams so the numerals keep a
+   real touch target instead of being squeezed to unusable widths. */
+@media (max-width: 639px) {
+  .fixture-row {
+    grid-template-columns: 44px minmax(0, 1fr) 40px;
+    grid-template-areas:
+      "time teams more"
+      "odds odds odds";
+    row-gap: 7px;
+    padding: 9px 10px;
+  }
+  .fixture-row > .fx-time { grid-area: time; }
+  .fixture-row > .fx-teams { grid-area: teams; }
+  .fixture-row > .fx-more { grid-area: more; }
+  .fixture-row > .fx-odds { grid-area: odds; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+}
+@media (min-width: 640px) {
+  .fixture-row > .fx-odds { display: contents; }
+}
+
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

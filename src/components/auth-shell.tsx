@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Zap, ShieldCheck, Smartphone } from "lucide-react";
 import { Brand } from "./brand";
 
 export function AuthShell({
@@ -12,55 +12,77 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-dvh overflow-hidden grid lg:grid-cols-2">
+    <div className="min-h-dvh grid lg:grid-cols-2">
       {/* left brand panel (desktop) */}
-      <div className="relative hidden lg:flex flex-col justify-between p-12 overflow-hidden border-r border-[var(--color-line)]">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-5%] w-[400px] h-[400px] rounded-full bg-[var(--color-violet)]/25 blur-[110px] animate-[orb_18s_ease-in-out_infinite]" />
-          <div className="absolute bottom-[5%] right-[-5%] w-[360px] h-[360px] rounded-full bg-[var(--color-pink)]/18 blur-[110px] animate-[orb_22s_ease-in-out_infinite]" />
-        </div>
-        <Brand size={34} />
-        <div className="relative">
-          <h2 className="font-display font-extrabold text-[34px] leading-tight tracking-tight">
-            Bet smarter.<br /><span className="grad-text">Win bigger.</span>
+      <div className="hidden lg:flex flex-col justify-between p-12 border-r border-[var(--color-line)] bg-[var(--color-bg-2)]">
+        <Brand size={32} />
+        <div>
+          <h2 className="font-display font-extrabold text-[32px] leading-[1.15] tracking-[-0.02em]">
+            Bet smarter.
+            <br />
+            <span className="text-[var(--color-accent)]">Get paid faster.</span>
           </h2>
-          <p className="text-[14px] text-[var(--color-ink-dim)] mt-4 max-w-sm leading-relaxed">
-            Premium odds across 23+ markets per match, instant mobile-money payouts, and verified tickets you can trust.
+          <p className="text-[13.5px] text-[var(--color-ink-dim)] mt-4 max-w-sm leading-relaxed">
+            Live odds across every major league, mobile-money deposits and
+            withdrawals, and a verification code on every ticket you place.
           </p>
-          <div className="flex items-center gap-6 mt-8">
-            <Stat val="4,820" label="Bets today" />
-            <Stat val="348" label="Live now" />
-            <Stat val="<10m" label="Payouts" />
-          </div>
+          {/* Product guarantees, not invented usage numbers. The previous build
+ hard-coded "4,820 bets today" and "348 live now" here, which were
+ fabricated — and contradicted the home page, which is careful to
+ show only feed-derived counts. */}
+          <ul className="flex flex-col gap-3 mt-8">
+            <Feature
+              icon={<Smartphone size={15} />}
+              text="MTN, Telecel and AirtelTigo mobile money"
+            />
+            <Feature
+              icon={<Zap size={15} />}
+              text="Balance credited automatically once payment clears"
+            />
+            <Feature
+              icon={<ShieldCheck size={15} />}
+              text="Every ticket carries a verification code"
+            />
+          </ul>
         </div>
-        <p className="relative text-[11px] text-[var(--color-ink-faint)]">© 2026 Plusebet. 18+ · Play responsibly.</p>
+        <p className="text-[11px] text-[var(--color-ink-faint)]">
+          © {new Date().getFullYear()} Plusebet. 18+ · Play responsibly.
+        </p>
       </div>
 
       {/* right form panel */}
-      <div className="relative grid place-items-center px-5 py-10">
-        <div className="absolute inset-0 lg:hidden pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[300px] h-[300px] rounded-full bg-[var(--color-violet)]/18 blur-[90px]" />
-        </div>
-        <div className="relative w-full max-w-[400px]">
-          <Link href="/" className="inline-flex items-center gap-1 text-[12.5px] text-[var(--color-ink-dim)] hover:text-white mb-6 transition">
-            <ChevronLeft size={15} /> Back to home
+      <div className="grid place-items-center px-5 py-10">
+        <div className="w-full max-w-[380px]">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-ink-dim)] hover:text-white mb-6 transition-colors"
+          >
+            <ChevronLeft size={14} /> Back to home
           </Link>
-          <div className="lg:hidden mb-6"><Brand size={32} /></div>
-          <h1 className="font-display font-extrabold text-[24px]">{title}</h1>
-          <p className="text-[13px] text-[var(--color-ink-dim)] mt-1.5">{subtitle}</p>
-          <div className="mt-7">{children}</div>
+          <div className="lg:hidden mb-6">
+            <Brand size={30} />
+          </div>
+          <h1 className="font-display font-extrabold text-[22px] tracking-[-0.01em]">
+            {title}
+          </h1>
+          <p className="text-[12.5px] text-[var(--color-ink-dim)] mt-1.5">
+            {subtitle}
+          </p>
+          <div className="mt-6">{children}</div>
         </div>
       </div>
     </div>
   );
 }
 
-function Stat({ val, label }: { val: string; label: string }) {
+function Feature({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div>
-      <div className="num text-[20px] font-extrabold grad-text">{val}</div>
-      <div className="text-[11px] text-[var(--color-ink-faint)]">{label}</div>
-    </div>
+    <li className="flex items-center gap-2.5 text-[12.5px] text-[var(--color-ink-dim)]">
+      <span className="grid place-items-center w-7 h-7 rounded-[var(--radius-ctl)] bg-[var(--color-surface-2)] border border-[var(--color-line)] text-[var(--color-accent)] shrink-0">
+        {icon}
+      </span>
+      {text}
+    </li>
   );
 }
 
@@ -76,13 +98,15 @@ export function Field({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-4">
-      <label className="block text-[12px] font-semibold text-[var(--color-ink-dim)] mb-1.5">{label}</label>
+    <div className="mb-3.5">
+      <label className="block text-[11.5px] font-semibold text-[var(--color-ink-dim)] mb-1.5">
+        {label}
+      </label>
       {children ?? (
         <input
           type={type}
           placeholder={placeholder}
-          className="w-full bg-[var(--color-surface)] border border-[var(--color-line)] rounded-xl px-3.5 py-3 text-[14px] outline-none focus:border-[var(--color-violet)]/60 focus:glow-violet transition placeholder:text-[var(--color-ink-faint)]"
+          className="w-full bg-[var(--color-surface)] border border-[var(--color-line)] rounded-[var(--radius-ctl)] px-3 py-2.5 text-[13.5px] outline-none focus:border-[var(--color-accent)] transition-colors placeholder:text-[var(--color-ink-faint)]"
         />
       )}
     </div>

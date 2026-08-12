@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, BarChart3, Lock } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, ChevronDown, Lock } from "lucide-react";
 import type { Match } from "@/lib/types";
 import { useSlip } from "@/lib/store";
 import { TeamBadge, CountryFlag } from "./brand";
 import { LiveClock } from "./live-clock";
+import { cn } from "@/lib/utils";
 
 const PICK_LABEL: Record<string, (m: Match) => string> = {
   "1": (m) => m.home,
@@ -13,16 +15,25 @@ const PICK_LABEL: Record<string, (m: Match) => string> = {
   "2": (m) => m.away,
 };
 
+/* ------------------------------------------------------------------
+ One odds cell. Quiet at rest, solid accent when selected — the
+ selected state is intentionally the loudest thing on the page.
+ ------------------------------------------------------------------ */
 function OddsCell({ m, idx }: { m: Match; idx: number }) {
   const mk = m.markets[idx];
   const id = `${m.id}-1x2-${mk.label}`;
   const has = useSlip((s) => s.selections.some((x) => x.id === id));
   const toggle = useSlip((s) => s.toggle);
   const locked = m.locked;
+
+  const pick = PICK_LABEL[mk.label](m);
+
   return (
     <button
       data-active={has}
       disabled={locked}
+      aria-pressed={has}
+      aria-label={`${pick} at ${mk.odds.toFixed(2)}`}
       onClick={(e) => {
         e.preventDefault();
         if (locked) return;
@@ -31,88 +42,255 @@ function OddsCell({ m, idx }: { m: Match; idx: number }) {
           matchId: m.id,
           match: `${m.home} v ${m.away}`,
           market: "Match Result",
-          pick: PICK_LABEL[mk.label](m),
+          pick,
           odds: mk.odds,
         });
       }}
-      className="odds-btn group/odds flex flex-col items-center justify-center gap-0.5 py-2 px-1 disabled:opacity-40 disabled:cursor-not-allowed"
+      className="odds-btn flex flex-col items-center justify-center leading-none disabled:opacity-35 disabled:cursor-not-allowed"
     >
-      <span className="text-[10px] font-medium text-[var(--color-ink-faint)] group-data-[active=true]/odds:text-white/80">
+      <span className="text-[9.5px] font-semibold text-[var(--color-ink-faint)] mb-0.5">
         {mk.label}
       </span>
-      <span className="num text-[13px]">{mk.odds.toFixed(2)}</span>
+      <span className="text-[13px]">{mk.odds.toFixed(2)}</span>
     </button>
   );
 }
 
-export function MatchCard({ m }: { m: Match }) {
+/* ------------------------------------------------------------------
+ Compact fixture row. Shares one grid with every other row so the
+ odds columns line up down the entire page — that alignment is what
+ makes a long list scannable rather than just small.
+ ------------------------------------------------------------------ */
+export function FixtureRow({ m }: { m: Match }) {
   return (
-    <div className="card card-hover group p-3.5 sm:p-4">
-      <Link href={`/match/${m.id}`} className="block">
-        {/* header row */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-[var(--color-ink-dim)]">
-            <CountryFlag url={m.leagueFlagUrl} emoji={m.leagueFlag} className="text-sm" />
-            <span className="text-[11px] font-medium truncate max-w-[140px]">{m.league}</span>
-          </div>
-          {m.live ? (
-            <span className="flex items-center gap-1.5 rounded-full px-2 py-0.5 bg-[var(--color-rose)]/12 border border-[var(--color-rose)]/30 text-[var(--color-rose)]">
-              <span className="live-dot" />
-              <LiveClock startTimeISO={m.startTimeISO} sport={m.sport} fallbackMinute={m.minute} className="num text-[10px] font-bold" />
+    <div className="fixture-row">
+      {/* time / live minute */}
+      <div className="fx-time flex flex-col items-start justify-center min-w-0">
+        {m.live ? (
+          <span className="flex items-center gap-1 text-[var(--color-loss)]">
+            <span className="live-dot" />
+            <LiveClock
+              startTimeISO={m.startTimeISO}
+              sport={m.sport}
+              fallbackMinute={m.minute}
+              className="num text-[10.5px] font-bold"
+            />
+          </span>
+        ) : m.locked ? (
+          <span className="flex items-center gap-1 text-[var(--color-ink-faint)]">
+            <Lock size={9} />
+            <span className="text-[9px] font-bold uppercase">
+              {m.lockLabel ?? "Closed"}
             </span>
-          ) : m.locked ? (
-            <span className="flex items-center gap-1 rounded-full px-2 py-0.5 bg-[var(--color-surface-2)] border border-[var(--color-line)] text-[var(--color-ink-faint)]">
-              <Lock size={9} />
-              <span className="text-[9.5px] font-bold uppercase tracking-wide">{m.lockLabel ?? "Locked"}</span>
-            </span>
-          ) : (
-            <span className="num text-[10.5px] text-[var(--color-ink-faint)]">{m.kickoff}</span>
-          )}
-        </div>
+          </span>
+        ) : (
+          <span className="num text-[11px] text-[var(--color-ink-dim)] font-semibold">
+            {m.kickoff}
+          </span>
+        )}
+      </div>
 
-        {/* teams */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-col gap-2.5 min-w-0 flex-1">
-            <div className="flex items-center gap-2.5">
-              <TeamBadge short={m.homeShort} color={m.homeColor} size={32} logo={m.homeLogo} />
-              <span className="font-display font-semibold text-[14px] truncate">{m.home}</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <TeamBadge short={m.awayShort} color={m.awayColor} size={32} logo={m.awayLogo} />
-              <span className="font-display font-semibold text-[14px] truncate">{m.away}</span>
-            </div>
-          </div>
-          {m.live && (
-            <div className="flex flex-col items-center gap-2.5 px-3">
-              <span className="num text-[18px] font-extrabold leading-none">{m.scoreHome}</span>
-              <span className="num text-[18px] font-extrabold leading-none">{m.scoreAway}</span>
-            </div>
-          )}
+      {/* teams — two tight lines, score on the right when live */}
+      <Link
+        href={`/match/${m.id}`}
+        className="fx-teams flex items-center gap-2 min-w-0 group"
+      >
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          <span className="flex items-center gap-1.5 min-w-0">
+            <TeamBadge
+              short={m.homeShort}
+              color={m.homeColor}
+              size={16}
+              logo={m.homeLogo}
+            />
+            <span className="text-[12.5px] font-semibold truncate group-hover:text-[var(--color-accent)] transition-colors">
+              {m.home}
+            </span>
+          </span>
+          <span className="flex items-center gap-1.5 min-w-0">
+            <TeamBadge
+              short={m.awayShort}
+              color={m.awayColor}
+              size={16}
+              logo={m.awayLogo}
+            />
+            <span className="text-[12.5px] font-semibold truncate group-hover:text-[var(--color-accent)] transition-colors">
+              {m.away}
+            </span>
+          </span>
         </div>
+        {m.live && (
+          <div className="flex flex-col gap-1 items-center shrink-0 pl-1">
+            <span className="num text-[12.5px] font-bold leading-none">
+              {m.scoreHome ?? 0}
+            </span>
+            <span className="num text-[12.5px] font-bold leading-none">
+              {m.scoreAway ?? 0}
+            </span>
+          </div>
+        )}
       </Link>
 
-      {/* odds + markets */}
-      <div className="mt-3.5 flex items-center gap-2">
-        <div className="grid grid-cols-3 gap-2 flex-1">
-          <OddsCell m={m} idx={0} />
-          <OddsCell m={m} idx={1} />
-          <OddsCell m={m} idx={2} />
-        </div>
-        <Link
-          href={`/match/${m.id}`}
-          className="flex items-center gap-1 shrink-0 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-2)] px-2.5 py-2 text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-violet)]/40 transition-colors"
-        >
-          <BarChart3 size={13} />
-          <span className="num text-[11px] font-bold">+{m.marketCount}</span>
-          <ChevronRight size={13} className="opacity-60" />
-        </Link>
+      {/* 1 X 2 — `display: contents` on sm+ so these sit in the shared grid */}
+      <div className="fx-odds">
+        <OddsCell m={m} idx={0} />
+        <OddsCell m={m} idx={1} />
+        <OddsCell m={m} idx={2} />
       </div>
+
+      {/* extra markets */}
+      <Link
+        href={`/match/${m.id}`}
+        aria-label={`${m.marketCount} markets for ${m.home} v ${m.away}`}
+        className="fx-more flex items-center justify-center gap-0.5 h-full rounded-[var(--radius-ctl)] text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] hover:bg-[var(--color-surface-3)] transition-colors"
+      >
+        <span className="num text-[10.5px] font-bold">+{m.marketCount}</span>
+        <ChevronRight size={12} />
+      </Link>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+ League group — collapsible header over a run of rows.
+ ------------------------------------------------------------------ */
+export function LeagueGroup({
+  league,
+  flag,
+  flagUrl,
+  matches,
+  defaultOpen = true,
+}: {
+  league: string;
+  flag: string;
+  flagUrl?: string;
+  matches: Match[];
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const liveCount = matches.filter((m) => m.live).length;
+
+  return (
+    <div className="card overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="league-head"
+        aria-expanded={open}
+      >
+        <ChevronDown
+          size={13}
+          className={cn(
+            "text-[var(--color-ink-faint)] transition-transform shrink-0",
+            !open && "-rotate-90",
+          )}
+        />
+        <CountryFlag url={flagUrl} emoji={flag} className="shrink-0" />
+        <span className="truncate">{league}</span>
+        {liveCount > 0 && (
+          <span className="flex items-center gap-1 text-[var(--color-loss)] shrink-0">
+            <span className="live-dot" />
+            <span className="num text-[10px] font-bold">{liveCount}</span>
+          </span>
+        )}
+        <span className="num text-[10.5px] text-[var(--color-ink-faint)] ml-auto shrink-0">
+          {matches.length}
+        </span>
+      </button>
+
+      {open && (
+        <>
+          {/* Column key, so the bare 1 / X / 2 numerals are labelled once
+ per group instead of on every single row. */}
+          <div className="fixture-head">
+            <span />
+            <span className="text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)] font-semibold">
+              Match
+            </span>
+            {["1", "X", "2"].map((l) => (
+              <span
+                key={l}
+                className="text-[9.5px] text-center text-[var(--color-ink-faint)] font-semibold"
+              >
+                {l}
+              </span>
+            ))}
+            <span />
+          </div>
+          {matches.map((m) => (
+            <FixtureRow key={m.id} m={m} />
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+ Groups a flat feed by league, preserving feed order.
+ ------------------------------------------------------------------ */
+export function FixtureList({
+  matches,
+  empty,
+}: {
+  matches: Match[];
+  empty: string;
+}) {
+  if (matches.length === 0) {
+    return (
+      <div className="card px-4 py-8 text-center">
+        <p className="text-[12.5px] text-[var(--color-ink-faint)]">{empty}</p>
+      </div>
+    );
+  }
+
+  const groups: {
+    league: string;
+    flag: string;
+    flagUrl?: string;
+    matches: Match[];
+  }[] = [];
+  const index = new Map<string, number>();
+  for (const m of matches) {
+    let i = index.get(m.league);
+    if (i === undefined) {
+      i = groups.length;
+      index.set(m.league, i);
+      groups.push({
+        league: m.league,
+        flag: m.leagueFlag,
+        flagUrl: m.leagueFlagUrl,
+        matches: [],
+      });
+    }
+    groups[i].matches.push(m);
+  }
+
+  return (
+    <div className="space-y-2">
+      {groups.map((g) => (
+        <LeagueGroup
+          key={g.league}
+          league={g.league}
+          flag={g.flag}
+          flagUrl={g.flagUrl}
+          matches={g.matches}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* Compat: a single fixture in its own bordered surface. */
+export function MatchCard({ m }: { m: Match }) {
+  return (
+    <div className="card overflow-hidden">
+      <FixtureRow m={m} />
     </div>
   );
 }
 
 export function MatchRow({ m }: { m: Match }) {
-  return <MatchCard m={m} />;
+  return <FixtureRow m={m} />;
 }
 
 export function SectionHead({
@@ -127,18 +305,28 @@ export function SectionHead({
   accent?: string;
 }) {
   return (
-    <div className="flex items-center justify-between mb-3 mt-6">
-      <div className="flex items-center gap-2.5">
-        <span className="title-bar" style={accent ? { background: accent } : undefined} />
-        <h2 className="font-display font-extrabold text-[15px] tracking-tight">{title}</h2>
+    <div className="flex items-center justify-between mb-2.5 mt-5">
+      <div className="flex items-center gap-2">
+        <span
+          className="title-bar"
+          style={accent ? { background: accent } : undefined}
+        />
+        <h2 className="font-display font-bold text-[14px] tracking-tight">
+          {title}
+        </h2>
       </div>
       {more &&
         (href ? (
-          <Link href={href} className="text-[11.5px] font-semibold text-[var(--color-cyan)] hover:underline">
+          <Link
+            href={href}
+            className="text-[11.5px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-accent)] transition-colors"
+          >
             {more} →
           </Link>
         ) : (
-          <span className="text-[11.5px] font-medium text-[var(--color-ink-faint)]">{more} →</span>
+          <span className="text-[11.5px] font-medium text-[var(--color-ink-faint)]">
+            {more}
+          </span>
         ))}
     </div>
   );

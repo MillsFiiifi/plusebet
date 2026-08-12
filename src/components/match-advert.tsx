@@ -116,7 +116,7 @@ export function MatchAdvert() {
       onClick={close}
       className="fixed inset-0 z-[80] grid place-items-center p-4 bg-black/80 backdrop-blur-sm"
     >
-      <div className="relative w-full max-w-[440px] overflow-hidden rounded-3xl border border-[var(--color-violet)]/30 shadow-[0_0_60px_-10px_rgba(139,92,246,.4)] animate-rise">
+      <div className="relative w-full max-w-[440px] overflow-hidden rounded-3xl border border-[var(--color-violet)]/30 animate-rise">
         {/* Pitch backdrop */}
         <div className="absolute inset-0 bg-[var(--color-bg-2)]" />
         <div className="absolute inset-x-0 top-0 h-[55%] bg-[radial-gradient(circle_at_50%_120%,rgba(16,185,129,.5),rgba(16,185,129,.1)_55%,transparent_75%)]" />
@@ -167,7 +167,7 @@ export function MatchAdvert() {
           {/* CTA */}
           <button
             onClick={close}
-            className="mt-6 w-full flex items-center justify-center gap-2 rounded-2xl py-4 font-display font-extrabold text-[15px] text-black grad-gold shadow-[0_12px_40px_-8px_rgba(250,204,21,.6)] active:scale-[.99] transition"
+            className="mt-6 w-full flex items-center justify-center gap-2 rounded-2xl py-4 font-display font-extrabold text-[15px] text-black grad-gold active:scale-[.99] transition"
           >
             Bet on {advert.home.name} vs {advert.away.name} <Zap size={17} className="fill-black" />
           </button>

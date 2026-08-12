@@ -91,19 +91,14 @@ export default function BookingPage() {
   })();
 
   return (
-    <div className="relative min-h-dvh overflow-hidden grid place-items-center px-4 py-10">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[10%] w-[420px] h-[420px] rounded-full bg-[var(--color-violet)]/20 blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[5%] w-[380px] h-[380px] rounded-full bg-[var(--color-cyan)]/15 blur-[100px]" />
-      </div>
-
+    <div className="min-h-dvh grid place-items-center px-4 py-10">
       <Link href="/" className="absolute top-5 left-5 z-10">
-        <Brand size={30} />
+        <Brand size={28} />
       </Link>
 
-      <div className="relative w-full max-w-[460px]">
-        <div className="grad-border animate-rise">
-          <div className="relative p-7 sm:p-9">
+      <div className="w-full max-w-[440px]">
+        <div className="card animate-rise">
+          <div className="p-6 sm:p-7">
             {!data ? (
               <div className="text-center">
                 <div className="mx-auto w-16 h-16 mb-5 grid place-items-center rounded-2xl bg-[var(--color-violet)]/12 text-[var(--color-violet)]">

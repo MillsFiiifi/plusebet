@@ -223,12 +223,13 @@ export default function AccountPage() {
       )}
 
       {/* hero */}
-      <div className="grad-border overflow-hidden">
-        <div className="relative p-5 sm:p-6">
-          <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-[var(--color-violet)]/15 blur-3xl" />
-          <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
+      <div className="card overflow-hidden">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             <div className="flex items-center gap-4">
-              <div className="grid place-items-center w-16 h-16 rounded-2xl grad-violet-pink text-white font-display font-extrabold text-[22px]">{initials}</div>
+              <div className="grid place-items-center w-14 h-14 rounded-[var(--radius-card)] bg-[var(--color-surface-3)] border border-[var(--color-line)] text-white font-display font-extrabold text-[19px]">
+                {initials}
+              </div>
               <div>
                 <div className="text-[11px] text-[var(--color-ink-dim)]">Welcome back</div>
                 <div className="font-display font-extrabold text-[19px]">{user?.name}</div>
@@ -241,20 +242,24 @@ export default function AccountPage() {
             </div>
             <div className="sm:ml-auto flex items-center gap-3 sm:justify-end">
               <div className="sm:text-right">
-                <div className="text-[11px] text-[var(--color-ink-dim)]">Available Balance</div>
-                <div className="num text-[30px] font-extrabold grad-text leading-tight">{money(user?.balance ?? 0)}</div>
+                <div className="text-[11px] text-[var(--color-ink-dim)]">Available balance</div>
+                {/* Accent as money — the balance is the single most important
+                    figure on this page. */}
+                <div className="num text-[28px] font-extrabold text-[var(--color-accent)] leading-tight">
+                  {money(user?.balance ?? 0)}
+                </div>
               </div>
               {user?.firstDepositAt && (
-                <div className="shrink-0 rounded-2xl px-3.5 py-2.5 text-center border border-[var(--color-amber)]/35 bg-[var(--color-amber)]/10">
-                  <div className="text-[15px] leading-none">🎁</div>
-                  <div className="num text-[15px] font-extrabold text-[var(--color-amber)] mt-1 leading-none">{money(100)}</div>
+                <div className="shrink-0 rounded-[var(--radius-card)] px-3.5 py-2.5 text-center border border-[var(--color-warn)]/35 bg-[var(--color-warn)]/10">
+                  <div className="text-[14px] leading-none">🎁</div>
+                  <div className="num text-[14px] font-extrabold text-[var(--color-warn)] mt-1 leading-none">{money(100)}</div>
                   <div className="text-[9px] uppercase tracking-wide text-[var(--color-ink-dim)] mt-1">Bonus</div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
             <Action onClick={() => setModal("deposit")} primary icon={<Plus size={16} />} label="Deposit" />
             <Action onClick={() => setModal("withdraw")} icon={<ArrowDownToLine size={16} />} label="Withdraw" />
             <ActionLink href="/bet-history" icon={<History size={16} />} label="Bet History" />
@@ -264,10 +269,10 @@ export default function AccountPage() {
       </div>
 
       {/* KPIs from real wallet totals */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-5">
-        <Kpi icon="💰" tone="emerald" val={money(user?.totalDeposited ?? 0)} label="Total Deposited" />
-        <Kpi icon="🏧" tone="cyan" val={money(user?.totalWithdrawn ?? 0)} label="Total Withdrawn" />
-        <Kpi icon="🔓" tone="rose" val={user?.withdrawalApproved ? "Enabled" : "Pending"} label="Withdrawals" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-4">
+        <Kpi icon="💰" val={money(user?.totalDeposited ?? 0)} label="Total deposited" />
+        <Kpi icon="🏧" val={money(user?.totalWithdrawn ?? 0)} label="Total withdrawn" />
+        <Kpi icon="🔓" val={user?.withdrawalApproved ? "Enabled" : "Pending"} label="Withdrawals" />
       </div>
 
       {/* live goal alerts opt-in */}
@@ -328,17 +333,14 @@ export default function AccountPage() {
   );
 }
 
-function Kpi({ icon, tone, val, label }: { icon: string; tone: string; val: string; label: string }) {
+function Kpi({ icon, val, label }: { icon: string; val: string; label: string }) {
   return (
-    <div className="card p-4">
-      <span className={cn("grid place-items-center w-9 h-9 rounded-xl text-[16px] mb-3",
-        tone === "gold" && "bg-[var(--color-amber)]/12",
-        tone === "emerald" && "bg-[var(--color-emerald)]/12",
-        tone === "cyan" && "bg-[var(--color-cyan)]/12",
-        tone === "rose" && "bg-[var(--color-rose)]/12",
-      )}>{icon}</span>
-      <div className="num text-[18px] font-extrabold truncate">{val}</div>
-      <div className="text-[11px] text-[var(--color-ink-dim)] mt-0.5">{label}</div>
+    <div className="card p-3.5">
+      <span className="grid place-items-center w-8 h-8 rounded-[var(--radius-ctl)] bg-[var(--color-surface-2)] border border-[var(--color-line)] text-[14px] mb-2.5">
+        {icon}
+      </span>
+      <div className="num text-[16px] font-extrabold truncate">{val}</div>
+      <div className="text-[10.5px] text-[var(--color-ink-dim)] mt-0.5">{label}</div>
     </div>
   );
 }
@@ -348,8 +350,9 @@ function Action({ onClick, icon, label, primary }: { onClick: () => void; icon: 
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12.5px] font-bold transition",
-        primary ? "grad-violet-pink text-white shadow-[0_8px_24px_-8px_rgba(236,72,153,.5)] hover:brightness-110"
+        "flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] py-2.5 text-[12.5px] font-bold transition-colors",
+        primary
+          ? "btn-primary"
           : "border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)]",
       )}
     >
@@ -362,7 +365,7 @@ function ActionLink({ href, icon, label }: { href: string; icon: React.ReactNode
   return (
     <Link
       href={href}
-      className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12.5px] font-bold border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition"
+      className="flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] py-2.5 text-[12.5px] font-bold border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition-colors"
     >
       {icon} {label}
     </Link>
@@ -786,7 +789,7 @@ function PaymentModal({
 
         {done ? (
           <div className="flex flex-col items-center text-center px-6 py-12">
-            <div className="grid place-items-center w-16 h-16 rounded-full grad-emerald mb-4 shadow-[0_10px_36px_-8px_rgba(52,211,153,.6)]">
+            <div className="grid place-items-center w-16 h-16 rounded-full grad-emerald mb-4">
               <Check size={30} className="text-white" />
             </div>
             <h4 className="font-display font-extrabold text-[17px] capitalize">{type === "deposit" ? "Deposit submitted" : "Withdrawal requested"}</h4>
@@ -797,7 +800,7 @@ function PaymentModal({
           </div>
         ) : redirectUrl ? (
           <div className="p-6 flex flex-col items-center text-center">
-            <div className="grid place-items-center w-16 h-16 rounded-full grad-violet-pink mb-4 shadow-[0_10px_36px_-8px_rgba(139,92,246,.6)]">
+            <div className="grid place-items-center w-16 h-16 rounded-full grad-violet-pink mb-4">
               <ShieldCheck size={30} className="text-white" />
             </div>
             <h4 className="font-display font-extrabold text-[17px]">Approve your payment</h4>
@@ -808,7 +811,7 @@ function PaymentModal({
             </p>
             <button
               onClick={() => window.location.assign(redirectUrl)}
-              className="mt-6 w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white shadow-[0_10px_30px_-8px_rgba(236,72,153,.5)] active:scale-[.99] transition"
+              className="mt-6 w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white active:scale-[.99] transition"
             >
               Continue to approve
             </button>
@@ -1142,7 +1145,7 @@ function ChangePasswordModal({ userId, onClose }: { userId: string; onClose: () 
 
         {done ? (
           <div className="flex flex-col items-center text-center px-6 py-12">
-            <div className="grid place-items-center w-16 h-16 rounded-full grad-emerald mb-4 shadow-[0_10px_36px_-8px_rgba(52,211,153,.6)]">
+            <div className="grid place-items-center w-16 h-16 rounded-full grad-emerald mb-4">
               <Check size={30} className="text-white" />
             </div>
             <h4 className="font-display font-extrabold text-[17px]">Password updated</h4>

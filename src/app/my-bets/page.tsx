@@ -13,10 +13,14 @@ export default function MyBetsPage() {
 
   return (
     <AppShell tabs={false}>
-      <div className="flex items-center gap-2.5 mb-5">
+      <div className="flex items-center gap-2 mb-4">
         <span className="title-bar" />
-        <h1 className="font-display font-extrabold text-[18px]">My Bets</h1>
-        <span className="num text-[10px] font-bold grad-violet-pink text-white px-2 py-1 rounded-md">{open.length} OPEN</span>
+        <h1 className="font-display font-extrabold text-[17px]">My Bets</h1>
+        {/* A count is not a selection or a primary action, so it stays neutral —
+            the accent is reserved for those two roles. */}
+        <span className="num text-[10px] font-bold text-[var(--color-ink-dim)] bg-[var(--color-surface-3)] border border-[var(--color-line)] px-2 py-0.5 rounded-full">
+          {open.length} open
+        </span>
       </div>
 
       {!loggedIn ? (

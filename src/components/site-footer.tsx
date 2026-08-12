@@ -51,21 +51,24 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-10 border-t border-[var(--color-line)] bg-[var(--color-bg-2)]/40">
-      <div className="mx-auto max-w-[1600px] px-5 sm:px-6 py-10">
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-8">
+    <footer className="mt-8 border-t border-[var(--color-line)] bg-[var(--color-bg-2)]">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-5 py-8">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-6 lg:gap-8">
           {/* Brand block */}
-          <div className="col-span-2 lg:col-span-2">
-            <Brand size={34} href="/" pro={false} />
-            <p className="text-[13px] text-[var(--color-ink-dim)] leading-relaxed mt-4 max-w-[280px]">
-              Premium international sports betting. Live odds, instant payouts, verified tickets.
+          <div className="col-span-2">
+            <Brand size={30} href="/" pro={false} />
+            <p className="text-[12.5px] text-[var(--color-ink-dim)] leading-relaxed mt-3 max-w-[280px]">
+              International sports betting. Live odds, mobile-money payouts,
+              verified tickets.
             </p>
-            <div className="mt-5 space-y-2.5">
-              <span className="flex items-center gap-2 text-[12px] font-mono text-[var(--color-ink-dim)]">
-                <Lock size={14} className="text-[var(--color-violet)]" /> SSL Secured
+            <div className="mt-4 space-y-2">
+              <span className="flex items-center gap-2 text-[11.5px] text-[var(--color-ink-dim)]">
+                <Lock size={13} className="text-[var(--color-ink-faint)]" /> SSL
+                secured
               </span>
-              <span className="flex items-center gap-2 text-[12px] font-mono text-[var(--color-ink-dim)]">
-                <Clock size={14} className="text-[var(--color-violet)]" /> 24/7 Support
+              <span className="flex items-center gap-2 text-[11.5px] text-[var(--color-ink-dim)]">
+                <Clock size={13} className="text-[var(--color-ink-faint)]" />{" "}
+                24/7 support
               </span>
             </div>
           </div>
@@ -73,15 +76,15 @@ export function SiteFooter() {
           {/* Link columns */}
           {COLUMNS.map((col) => (
             <div key={col.title}>
-              <h3 className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-ink-faint)] mb-4">
+              <h3 className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink-faint)] mb-3">
                 {col.title}
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {col.links.map((l) => (
                   <li key={l.label}>
                     <Link
                       href={l.href}
-                      className="text-[14px] text-[var(--color-ink-dim)] hover:text-white transition-colors"
+                      className="text-[12.5px] text-[var(--color-ink-dim)] hover:text-white transition-colors"
                     >
                       {l.label}
                     </Link>
@@ -92,12 +95,12 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-10 pt-6 border-t border-[var(--color-line)] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[12px] text-[var(--color-ink-faint)]">
+        <div className="mt-8 pt-5 border-t border-[var(--color-line)] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-[11.5px] text-[var(--color-ink-faint)]">
             © {new Date().getFullYear()} Plusebet. All rights reserved.
           </p>
-          <p className="text-[12px] text-[var(--color-ink-faint)] flex items-center gap-2">
-            <span className="font-bold text-[var(--color-amber)] border border-[var(--color-amber)]/40 rounded px-1.5 py-0.5">
+          <p className="text-[11.5px] text-[var(--color-ink-faint)] flex items-center gap-2">
+            <span className="num font-bold text-[var(--color-ink-dim)] border border-[var(--color-line-2)] rounded px-1.5 py-0.5">
               18+
             </span>
             Please gamble responsibly.

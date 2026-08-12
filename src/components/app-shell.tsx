@@ -27,9 +27,11 @@ export function AppShell({
       <LiveTicker />
       {tabs && <SportTabs />}
 
-      <div className="mx-auto max-w-[1600px] flex gap-0 lg:gap-5 px-0 lg:px-5">
+      <div className="mx-auto max-w-[1600px] flex gap-0 lg:gap-4 px-0 lg:px-4">
         <Sidebar />
-        <main className="flex-1 min-w-0 px-3 sm:px-4 lg:px-0 py-4 pb-28 xl:pb-8">
+        {/* Bottom padding clears the docked mobile nav (54px) plus the
+ collapsed bet-slip bar that sits above it. */}
+        <main className="flex-1 min-w-0 px-2.5 sm:px-3 lg:px-0 py-3 pb-32 xl:pb-6">
           {children}
         </main>
         {betSlip && <DesktopBetSlip />}

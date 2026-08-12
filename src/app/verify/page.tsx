@@ -85,65 +85,64 @@ export default function VerifyPage() {
   }
 
   return (
-    <div className="relative min-h-dvh overflow-hidden grid place-items-center px-4 py-10">
-      {/* animated background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[10%] w-[420px] h-[420px] rounded-full bg-[var(--color-violet)]/20 blur-[100px] animate-[orb_16s_ease-in-out_infinite]" />
-        <div className="absolute bottom-[-10%] right-[5%] w-[380px] h-[380px] rounded-full bg-[var(--color-cyan)]/15 blur-[100px] animate-[orb_20s_ease-in-out_infinite]" />
-        <div className="absolute top-[40%] left-[55%] w-[300px] h-[300px] rounded-full bg-[var(--color-pink)]/12 blur-[100px] animate-[orb_24s_ease-in-out_infinite]" />
-      </div>
-
+    <div className="min-h-dvh grid place-items-center px-4 py-10">
       <Link href="/" className="absolute top-5 left-5 z-10">
-        <Brand size={30} />
+        <Brand size={28} />
       </Link>
 
-      <div className="relative w-full max-w-[460px]">
+      <div className="w-full max-w-[420px]">
         {!result ? (
-          <div className="grad-border animate-rise">
-            <div className="relative p-7 sm:p-9 text-center">
-              {/* shield */}
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <span className="absolute inset-0 rounded-full border border-[var(--color-violet)]/30 animate-ping" />
-                <span className="absolute inset-2 rounded-full border border-[var(--color-cyan)]/20" />
-                <span className="absolute inset-0 grid place-items-center">
-                  <Shield size={44} className="text-[var(--color-violet)]" strokeWidth={1.5} />
-                  <Check size={18} className="absolute text-[var(--color-emerald)]" strokeWidth={3} />
-                </span>
+          <div className="card animate-rise">
+            <div className="p-6 sm:p-7 text-center">
+              <div className="mx-auto grid place-items-center w-14 h-14 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-line)] mb-5">
+                <Shield size={26} className="text-[var(--color-accent)]" strokeWidth={1.8} />
               </div>
 
-              <h1 className="font-display font-extrabold text-[22px]">Verify Your Ticket</h1>
-              <p className="text-[13px] text-[var(--color-ink-dim)] mt-2 leading-relaxed">
+              <h1 className="font-display font-extrabold text-[20px]">Verify your ticket</h1>
+              <p className="text-[12.5px] text-[var(--color-ink-dim)] mt-1.5 leading-relaxed">
                 Enter your verification code to confirm authenticity and check results in real time.
               </p>
 
-              <div className={cn("relative mt-6 flex items-center rounded-2xl border bg-[var(--color-surface)] transition", error ? "border-[var(--color-rose)]/60" : "border-[var(--color-line)] focus-within:border-[var(--color-violet)]/60 focus-within:glow-violet")}>
-                <Lock size={16} className="ml-4 text-[var(--color-ink-faint)]" />
+              <div
+                className={cn(
+                  "relative mt-5 flex items-center rounded-[var(--radius-ctl)] border bg-[var(--color-surface)] transition-colors",
+                  error
+                    ? "border-[var(--color-loss)]"
+                    : "border-[var(--color-line)] focus-within:border-[var(--color-accent)]",
+                )}
+              >
+                <Lock size={15} className="ml-3 text-[var(--color-ink-faint)] shrink-0" />
                 <input
                   value={code}
                   onChange={(e) => { setCode(e.target.value); setError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && verify()}
                   placeholder="Enter verification code"
-                  className="flex-1 bg-transparent num text-[14px] tracking-wider px-3 py-4 outline-none placeholder:text-[var(--color-ink-faint)] placeholder:tracking-normal placeholder:font-sans"
+                  aria-label="Verification code"
+                  className="flex-1 min-w-0 bg-transparent num text-[13.5px] tracking-wider px-2.5 py-3 outline-none placeholder:text-[var(--color-ink-faint)] placeholder:tracking-normal placeholder:font-sans"
                 />
                 <button
                   onClick={verify}
                   disabled={loading}
-                  className="m-1.5 flex items-center gap-1.5 rounded-xl grad-violet-pink text-white px-4 py-2.5 font-display font-bold text-[13px] active:scale-95 transition disabled:opacity-60"
+                  className="m-1.5 flex items-center gap-1.5 rounded-[6px] btn-primary px-3.5 py-2 font-bold text-[12.5px] active:scale-95 transition disabled:opacity-50 shrink-0"
                 >
                   {loading ? (
-                    <span className="inline-block w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-[spin_0.8s_linear_infinite]" />
+                    <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-current/30 border-t-current animate-[spin_0.8s_linear_infinite]" />
                   ) : (
-                    <>Verify <ArrowRight size={15} /></>
+                    <>Verify <ArrowRight size={14} /></>
                   )}
                 </button>
               </div>
 
-              {error && <p className="text-[12px] text-[var(--color-rose)] mt-2.5 flex items-center justify-center gap-1.5"><X size={13} /> {error}</p>}
+              {error && (
+                <p className="text-[11.5px] text-[var(--color-loss)] mt-2 flex items-center justify-center gap-1.5">
+                  <X size={12} /> {error}
+                </p>
+              )}
 
-              <div className="grid grid-cols-3 gap-2 mt-7 pt-6 border-t border-[var(--color-line)]">
-                <Feature icon={<ShieldCheck size={18} />} title="Authentic" sub="Genuine ticket" />
-                <Feature icon={<Zap size={18} />} title="Instant" sub="Real-time" />
-                <Feature icon={<Lock size={18} />} title="Private" sub="Protected" />
+              <div className="grid grid-cols-3 gap-2 mt-6 pt-5 border-t border-[var(--color-line)]">
+                <Feature icon={<ShieldCheck size={16} />} title="Authentic" sub="Genuine ticket" />
+                <Feature icon={<Zap size={16} />} title="Instant" sub="Real-time" />
+                <Feature icon={<Lock size={16} />} title="Private" sub="Protected" />
               </div>
             </div>
           </div>
@@ -157,10 +156,10 @@ export default function VerifyPage() {
 
 function Feature({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <span className="text-[var(--color-violet)]">{icon}</span>
-      <span className="font-display font-bold text-[12px]">{title}</span>
-      <span className="text-[10px] text-[var(--color-ink-faint)]">{sub}</span>
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-[var(--color-ink-faint)]">{icon}</span>
+      <span className="font-bold text-[11.5px]">{title}</span>
+      <span className="text-[9.5px] text-[var(--color-ink-faint)]">{sub}</span>
     </div>
   );
 }
@@ -168,25 +167,27 @@ function Feature({ icon, title, sub }: { icon: React.ReactNode; title: string; s
 function ResultCard({ r, onReset }: { r: Result; onReset: () => void }) {
   const wonLegs = r.legs.filter((l) => l.result === "won").length;
   return (
-    <div className="grad-border animate-rise">
-      <div className="relative p-6 sm:p-7">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2.5">
-            <span className="grid place-items-center w-10 h-10 rounded-xl bg-[var(--color-emerald)]/12 text-[var(--color-emerald)]">
-              <ShieldCheck size={20} />
+    <div className="card animate-rise">
+      <div className="p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="grid place-items-center w-9 h-9 rounded-[var(--radius-ctl)] bg-[var(--color-accent)]/12 text-[var(--color-accent)] shrink-0">
+              <ShieldCheck size={18} />
             </span>
-            <div>
-              <div className="font-display font-extrabold text-[15px]">Ticket Verified</div>
-              <div className="num text-[11px] text-[var(--color-cyan)]">{r.code}</div>
+            <div className="min-w-0">
+              <div className="font-display font-bold text-[14px]">Ticket verified</div>
+              <div className="num text-[11px] text-[var(--color-ink-dim)] truncate">{r.code}</div>
             </div>
           </div>
-          <span className={cn(
-            "chip px-2.5 py-1",
-            r.status === "won" && "bg-[var(--color-emerald)]/12 border-[var(--color-emerald)]/30 text-[var(--color-emerald)]",
-            r.status === "lost" && "bg-[var(--color-rose)]/12 border-[var(--color-rose)]/30 text-[var(--color-rose)]",
-            r.status === "pending" && "bg-[var(--color-amber)]/12 border-[var(--color-amber)]/30 text-[var(--color-amber)]",
-          )}>
-            {r.status === "won" ? "🏆 Won" : r.status === "lost" ? "❌ Lost" : "⏳ In Progress"}
+          <span
+            className={cn(
+              "chip px-2.5 py-1 shrink-0",
+              r.status === "won" && "bg-[var(--color-accent)]/12 border-[var(--color-accent)]/30 text-[var(--color-accent)]",
+              r.status === "lost" && "bg-[var(--color-loss)]/12 border-[var(--color-loss)]/30 text-[var(--color-loss)]",
+              r.status === "pending" && "bg-[var(--color-warn)]/12 border-[var(--color-warn)]/30 text-[var(--color-warn)]",
+            )}
+          >
+            {r.status === "won" ? "Won" : r.status === "lost" ? "Lost" : "In progress"}
           </span>
         </div>
 
@@ -196,23 +197,34 @@ function ResultCard({ r, onReset }: { r: Result; onReset: () => void }) {
           <Box label="Potential" value={cedis(r.payout)} grad />
         </div>
 
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-[9.5px] font-bold uppercase tracking-wider text-[var(--color-ink-faint)]">
             <span>Selections</span>
-            <span className="text-[var(--color-emerald)]">{wonLegs}/{r.legs.length} won</span>
+            <span className="text-[var(--color-accent)]">{wonLegs}/{r.legs.length} won</span>
           </div>
           {r.legs.map((l, i) => (
-            <div key={i} className="flex items-center gap-3 card p-3">
-              <span className={cn(
-                "grid place-items-center w-7 h-7 rounded-lg shrink-0",
-                l.result === "won" && "bg-[var(--color-emerald)]/12 text-[var(--color-emerald)]",
-                l.result === "lost" && "bg-[var(--color-rose)]/12 text-[var(--color-rose)]",
-                l.result === "pending" && "bg-[var(--color-amber)]/12 text-[var(--color-amber)]",
-              )}>
-                {l.result === "won" ? <Check size={15} /> : l.result === "lost" ? <X size={15} /> : <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />}
+            <div
+              key={i}
+              className="flex items-center gap-2.5 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-2.5"
+            >
+              <span
+                className={cn(
+                  "grid place-items-center w-6 h-6 rounded-md shrink-0",
+                  l.result === "won" && "bg-[var(--color-accent)]/12 text-[var(--color-accent)]",
+                  l.result === "lost" && "bg-[var(--color-loss)]/12 text-[var(--color-loss)]",
+                  l.result === "pending" && "bg-[var(--color-warn)]/12 text-[var(--color-warn)]",
+                )}
+              >
+                {l.result === "won" ? (
+                  <Check size={13} />
+                ) : l.result === "lost" ? (
+                  <X size={13} />
+                ) : (
+                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                )}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="font-display font-semibold text-[12.5px] truncate">{l.pick}</div>
+                <div className="font-semibold text-[12px] truncate">{l.pick}</div>
                 <div className="text-[10.5px] text-[var(--color-ink-faint)] truncate">{l.match}</div>
               </div>
               <span className="num text-[12px] font-bold shrink-0">{l.odds.toFixed(2)}</span>
@@ -220,8 +232,11 @@ function ResultCard({ r, onReset }: { r: Result; onReset: () => void }) {
           ))}
         </div>
 
-        <button onClick={onReset} className="mt-6 w-full flex items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] py-3 text-[13px] font-semibold text-[var(--color-ink-dim)] hover:text-white transition">
-          <RotateCcw size={15} /> Verify Another Ticket
+        <button
+          onClick={onReset}
+          className="mt-5 w-full flex items-center justify-center gap-2 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] py-2.5 text-[12.5px] font-semibold text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition-colors"
+        >
+          <RotateCcw size={14} /> Verify another ticket
         </button>
       </div>
     </div>
@@ -230,9 +245,9 @@ function ResultCard({ r, onReset }: { r: Result; onReset: () => void }) {
 
 function Box({ label, value, grad }: { label: string; value: string; grad?: boolean }) {
   return (
-    <div className="card p-3 text-center">
-      <div className="text-[9.5px] uppercase tracking-wide text-[var(--color-ink-faint)]">{label}</div>
-      <div className={cn("num text-[14px] font-extrabold mt-1", grad && "grad-text")}>{value}</div>
+    <div className="rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-2.5 text-center">
+      <div className="text-[9px] uppercase tracking-wide text-[var(--color-ink-faint)]">{label}</div>
+      <div className={cn("num text-[13.5px] font-extrabold mt-1", grad && "text-[var(--color-accent)]")}>{value}</div>
     </div>
   );
 }

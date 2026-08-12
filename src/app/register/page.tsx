@@ -23,7 +23,7 @@ const COUNTRIES = [
 ] as const;
 
 const inputCls =
-  "w-full bg-[var(--color-surface)] border border-[var(--color-line)] rounded-xl px-3.5 py-3 text-[14px] outline-none focus:border-[var(--color-violet)]/60 focus:glow-violet transition placeholder:text-[var(--color-ink-faint)]";
+  "w-full bg-[var(--color-surface)] border border-[var(--color-line)] rounded-[var(--radius-ctl)] px-3 py-2.5 text-[13.5px] outline-none focus:border-[var(--color-accent)] transition-colors placeholder:text-[var(--color-ink-faint)]";
 
 export default function RegisterPage() {
   const [show, setShow] = useState(false);
@@ -110,7 +110,7 @@ export default function RegisterPage() {
             <select
               value={dial}
               onChange={(e) => setDial(e.target.value)}
-              className="bg-[var(--color-surface)] border border-[var(--color-line)] rounded-xl px-2.5 py-3 text-[14px] outline-none focus:border-[var(--color-violet)]/60 w-[92px]"
+              className="bg-[var(--color-surface)] border border-[var(--color-line)] rounded-[var(--radius-ctl)] px-2.5 py-2.5 text-[13.5px] outline-none focus:border-[var(--color-accent)] transition-colors w-[90px]"
             >
               {COUNTRIES.map((c) => (
                 <option key={c.dial} value={c.dial}>{c.flag} +{c.dial}</option>
@@ -174,33 +174,42 @@ export default function RegisterPage() {
         </Field>
 
         {error && (
-          <p className="mb-2 text-[12.5px] font-semibold text-[var(--color-rose,#fb7185)]">{error}</p>
+          <p className="mb-2 text-[12px] font-semibold text-[var(--color-loss)]">{error}</p>
         )}
 
         <button
           type="button"
           onClick={() => setAgree((v) => !v)}
+          aria-pressed={agree}
           className="flex items-start gap-2.5 my-4 text-left"
         >
-          <span className={`grid place-items-center w-5 h-5 rounded-md border shrink-0 mt-0.5 transition ${agree ? "grad-violet-pink border-transparent" : "border-[var(--color-line-2)]"}`}>
-            {agree && <Check size={13} className="text-white" />}
+          <span
+            className={`grid place-items-center w-[18px] h-[18px] rounded-[5px] border shrink-0 mt-0.5 transition-colors ${
+              agree
+                ? "bg-[var(--color-accent)] border-[var(--color-accent)]"
+                : "border-[var(--color-line-2)]"
+            }`}
+          >
+            {agree && <Check size={12} className="text-[var(--color-accent-ink)]" strokeWidth={3} />}
           </span>
-          <span className="text-[12px] text-[var(--color-ink-dim)] leading-relaxed">
-            I&apos;m 18+ and agree to the <span className="text-[var(--color-cyan)]">Terms</span> and <span className="text-[var(--color-cyan)]">Privacy Policy</span>.
+          <span className="text-[11.5px] text-[var(--color-ink-dim)] leading-relaxed">
+            I&apos;m 18+ and agree to the <span className="text-[var(--color-accent)]">Terms</span> and{" "}
+            <span className="text-[var(--color-accent)]">Privacy Policy</span>.
           </span>
         </button>
 
         <button
           type="submit"
           disabled={!agree || loading}
-          className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white shadow-[0_10px_30px_-8px_rgba(236,72,153,.5)] disabled:opacity-50 disabled:shadow-none active:scale-[.99] transition flex items-center justify-center gap-2"
+          className="w-full rounded-[var(--radius-ctl)] py-3 btn-primary font-extrabold text-[13.5px] disabled:opacity-40 active:scale-[.99] transition flex items-center justify-center gap-2"
         >
-          {loading && <Loader2 size={16} className="animate-spin" />}
-          {loading ? "Creating…" : "Create Account"}
+          {loading && <Loader2 size={15} className="animate-spin" />}
+          {loading ? "Creating…" : "Create account"}
         </button>
 
-        <p className="text-center text-[13px] text-[var(--color-ink-dim)] mt-5">
-          Already have an account? <Link href="/login" className="font-bold text-[var(--color-violet)] hover:underline">Sign in</Link>
+        <p className="text-center text-[12.5px] text-[var(--color-ink-dim)] mt-5">
+          Already have an account?{" "}
+          <Link href="/login" className="font-bold text-[var(--color-accent)] hover:underline">Sign in</Link>
         </p>
       </form>
     </AuthShell>

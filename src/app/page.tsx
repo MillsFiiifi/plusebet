@@ -2,22 +2,40 @@
 
 import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { MatchCard, SectionHead } from "@/components/match-card";
-import { PromoStrip, StatRibbon, FeaturedMatch } from "@/components/home-sections";
+import { FixtureList, SectionHead } from "@/components/match-card";
+import {
+  PromoStrip,
+  StatRibbon,
+  FeaturedMatch,
+} from "@/components/home-sections";
 import { WinnersTicker } from "@/components/winners-ticker";
 import { competitions } from "@/lib/data";
 import { useMatches } from "@/lib/use-matches";
 
 const FILTERS = ["All", "Football", "Top Leagues", "Boosted", "Ghana 🇬🇭"];
 
-function MatchGrid({ matches, empty }: { matches: ReturnType<typeof useMatches>["all"]; empty: string }) {
-  if (matches.length === 0) {
-    return <p className="text-[13px] text-[var(--color-ink-faint)] py-2">{empty}</p>;
-  }
+function ListSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      {matches.map((m) => (
-        <MatchCard key={m.id} m={m} />
+    <div className="space-y-2 mt-3">
+      {[0, 1, 2].map((g) => (
+        <div key={g} className="card overflow-hidden">
+          <div className="h-[34px] shimmer" />
+          {[0, 1, 2].map((r) => (
+            <div key={r} className="fixture-row">
+              <div className="fx-time h-3 rounded shimmer" />
+              <div className="fx-teams space-y-1.5">
+                <div className="h-3 w-2/3 rounded shimmer" />
+                <div className="h-3 w-1/2 rounded shimmer" />
+              </div>
+              <div className="fx-odds">
+                <div className="h-[42px] rounded-[var(--radius-ctl)] shimmer" />
+                <div className="h-[42px] rounded-[var(--radius-ctl)] shimmer" />
+                <div className="h-[42px] rounded-[var(--radius-ctl)] shimmer" />
+              </div>
+              <div className="fx-more h-4 rounded shimmer" />
+            </div>
+          ))}
+        </div>
       ))}
     </div>
   );
@@ -36,13 +54,18 @@ export default function Home() {
       {featured && <FeaturedMatch m={featured} />}
 
       {/* league filter chips */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar mt-6">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar mt-4">
         {FILTERS.map((f) => (
-          <button key={f} data-active={filter === f} onClick={() => setFilter(f)} className="chip shrink-0 px-3.5 py-1.5">
+          <button
+            key={f}
+            data-active={filter === f}
+            onClick={() => setFilter(f)}
+            className="chip shrink-0 px-3 py-1.5"
+          >
             {f}
           </button>
         ))}
-        <div className="w-px bg-[var(--color-line)] mx-1 shrink-0" />
+        <div className="w-px bg-[var(--color-line)] mx-0.5 shrink-0" />
         {competitions.slice(0, 4).map((c) => (
           <button key={c.id} className="chip shrink-0 px-3 py-1.5">
             {c.flag} {c.name}
@@ -51,23 +74,33 @@ export default function Home() {
       </div>
 
       {loading ? (
-        <p className="text-[13px] text-[var(--color-ink-faint)] py-8 text-center">Loading matches…</p>
+        <ListSkeleton />
       ) : (
         <>
-          <SectionHead title="Live In-Play" more="View All" href="/live" accent="linear-gradient(180deg,#f43f5e,#dc2626)" />
-          <MatchGrid matches={live} empty="No live matches right now." />
+          <SectionHead
+            title="Live In-Play"
+            more="View all"
+            href="/live"
+            accent="var(--color-loss)"
+          />
+          <FixtureList matches={live} empty="No live matches right now." />
 
           <SectionHead title="Today" more={`${today.length} matches`} />
-          <MatchGrid matches={today} empty="No more matches today." />
+          <FixtureList matches={today} empty="No more matches today." />
 
           <SectionHead title="Tomorrow" more={`${tomorrow.length} matches`} />
-          <MatchGrid matches={tomorrow} empty="No fixtures listed for tomorrow yet." />
+          <FixtureList
+            matches={tomorrow}
+            empty="No fixtures listed for tomorrow yet."
+          />
 
-          <SectionHead title="This Week" more="All" />
-          <MatchGrid matches={week} empty="No upcoming fixtures this week yet." />
+          <SectionHead title="This Week" more={`${week.length} matches`} />
+          <FixtureList
+            matches={week}
+            empty="No upcoming fixtures this week yet."
+          />
         </>
       )}
-
     </AppShell>
   );
 }
