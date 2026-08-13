@@ -4,10 +4,12 @@ import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { FixtureList, SectionHead } from "@/components/match-card";
 import {
-  PromoStrip,
+  HeroPromo,
+  CategoryTiles,
   StatRibbon,
   FeaturedMatch,
 } from "@/components/home-sections";
+import { MatchRail } from "@/components/match-rail";
 import { WinnersTicker } from "@/components/winners-ticker";
 import { competitions } from "@/lib/data";
 import { useMatches } from "@/lib/use-matches";
@@ -48,7 +50,19 @@ export default function Home() {
 
   return (
     <AppShell>
-      <PromoStrip />
+      <HeroPromo />
+      <CategoryTiles />
+
+      {/* Showcase rail. Deliberately capped and placed ABOVE the dense list
+          rather than replacing it: a rail hides most of its content off-screen,
+          so it suits "here are a few worth a look" and is the wrong tool for
+          "find me Arsenal v Chelsea". The vertical list below still does that. */}
+      <MatchRail
+        title="Top matches"
+        matches={live.length > 0 ? live : today}
+        href={live.length > 0 ? "/live" : undefined}
+      />
+
       <StatRibbon />
       <WinnersTicker />
       {featured && <FeaturedMatch m={featured} />}

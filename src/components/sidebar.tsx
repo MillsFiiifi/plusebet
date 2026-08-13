@@ -15,10 +15,63 @@ const BROWSE = [
   { href: "/account", icon: Gift, label: "Promotions" },
 ];
 
+/**
+ * Segmented Sports / Live switch at the top of the sidebar.
+ *
+ * The reference layout uses this slot to swap between two product verticals
+ * (Casino / Sport). There is only one vertical here, so it switches between
+ * the two modes of this one instead — pre-match and in-play — which is the
+ * split that actually matters to a punter. It is a real pair of routes, not
+ * a decorative toggle.
+ */
+function ModeSwitch({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const modes = [
+    { href: "/", label: "Sports", active: pathname === "/" },
+    { href: "/live", label: "Live", active: pathname.startsWith("/live") },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label="Betting mode"
+      className="grid grid-cols-2 gap-1 p-1 rounded-[var(--radius-ctl)] bg-[var(--color-surface-2)] border border-[var(--color-line)]"
+    >
+      {modes.map((m) => (
+        <Link
+          key={m.label}
+          href={m.href}
+          role="tab"
+          aria-selected={m.active}
+          onClick={onNavigate}
+          className={cn(
+            "flex items-center justify-center gap-1.5 rounded-[6px] py-[7px] text-[12px] font-display font-bold transition-colors",
+            m.active
+              ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)]"
+              : "text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]",
+          )}
+        >
+          {m.label === "Live" && (
+            <span
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                m.active
+                  ? "bg-[var(--color-accent-ink)]"
+                  : "bg-[var(--color-loss)]",
+              )}
+            />
+          )}
+          {m.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <div className="flex flex-col gap-5 py-4 px-2.5">
+      <ModeSwitch onNavigate={onNavigate} />
       <Section label="Browse">
         {BROWSE.map((b, i) => {
           const Icon = b.icon;

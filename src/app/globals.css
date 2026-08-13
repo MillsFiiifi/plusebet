@@ -432,5 +432,93 @@ img, svg { user-select: none; -webkit-user-drag: none; }
   .fixture-row > .fx-odds { display: contents; }
 }
 
+/* ============================================================
+   HOME LAYOUT — hero, category tiles, horizontal rails
+   ============================================================ */
+
+/* Hero banner.
+   The reference design fills this panel with saturated brand colour. Here it
+   is a TINT, not a fill, on purpose: the accent's whole job in this system is
+   to mean "selected odd / primary action", and a full-bleed accent panel at
+   the top of the busiest screen would outshout every odds button under it.
+   The tint reads as branded, and the one solid accent button inside it stays
+   the loudest thing in the region. */
+.hero {
+  position: relative;
+  border-radius: var(--radius-card);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-accent) 11%, var(--color-surface)),
+      var(--color-surface) 62%
+    );
+  overflow: hidden;
+}
+
+/* Category tile — the four shortcuts under the hero. */
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.tile:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  background: var(--color-surface-2);
+}
+.tile-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+/* Horizontal rail.
+   scroll-snap so the arrow buttons and a thumb-flick both land on a card edge
+   rather than mid-card. overscroll-behavior-x stops a horizontal flick from
+   also triggering the browser's back-swipe gesture on iOS. */
+.rail {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+}
+.rail > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail { scroll-behavior: auto; }
+}
+
+/* Rail arrow — hidden on touch, where swiping is the real control. */
+.rail-arrow {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-dim);
+  transition: color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.rail-arrow:hover:not(:disabled) {
+  color: var(--color-ink);
+  border-color: var(--color-line-2);
+}
+.rail-arrow:disabled { opacity: 0.35; cursor: default; }
+
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
