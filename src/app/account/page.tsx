@@ -197,7 +197,7 @@ export default function AccountPage() {
           <h2 className="font-display font-extrabold text-[19px]">You&apos;re not signed in</h2>
           <p className="text-[13px] text-[var(--color-ink-dim)] mt-2">Sign in to view your wallet, deposit, and withdraw.</p>
           <div className="flex gap-3 justify-center mt-6">
-            <Link href="/login" className="rounded-xl px-5 py-3 font-display font-bold grad-violet-pink text-white text-sm">Sign In</Link>
+            <Link href="/login" className="rounded-xl px-5 py-3 font-display font-bold grad-violet-pink text-[var(--color-ink)] text-sm">Sign In</Link>
             <Link href="/register" className="rounded-xl px-5 py-3 font-display font-bold border border-[var(--color-line)] text-sm">Create account</Link>
           </div>
         </div>
@@ -227,14 +227,14 @@ export default function AccountPage() {
         <div className="p-5 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             <div className="flex items-center gap-4">
-              <div className="grid place-items-center w-14 h-14 rounded-[var(--radius-card)] bg-[var(--color-surface-3)] border border-[var(--color-line)] text-white font-display font-extrabold text-[19px]">
+              <div className="grid place-items-center w-14 h-14 rounded-[var(--radius-card)] bg-[var(--color-surface-3)] border border-[var(--color-line)] text-[var(--color-ink)] font-display font-extrabold text-[19px]">
                 {initials}
               </div>
               <div>
                 <div className="text-[11px] text-[var(--color-ink-dim)]">Welcome back</div>
                 <div className="font-display font-extrabold text-[19px]">{user?.name}</div>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <button onClick={signOut} className="chip px-2 py-0.5 inline-flex items-center gap-1 text-[var(--color-ink-dim)] hover:text-white">
+                  <button onClick={signOut} className="chip px-2 py-0.5 inline-flex items-center gap-1 text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]">
                     <LogOut size={11} /> Sign out
                   </button>
                 </div>
@@ -309,7 +309,7 @@ export default function AccountPage() {
           </div>
           <button
             onClick={() => setPwOpen(true)}
-            className="shrink-0 rounded-xl px-4 py-2 text-[12.5px] font-bold border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition"
+            className="shrink-0 rounded-xl px-4 py-2 text-[12.5px] font-bold border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition"
           >
             Change
           </button>
@@ -353,7 +353,7 @@ function Action({ onClick, icon, label, primary }: { onClick: () => void; icon: 
         "flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] py-2.5 text-[12.5px] font-bold transition-colors",
         primary
           ? "btn-primary"
-          : "border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)]",
+          : "border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)]",
       )}
     >
       {icon} {label}
@@ -365,7 +365,7 @@ function ActionLink({ href, icon, label }: { href: string; icon: React.ReactNode
   return (
     <Link
       href={href}
-      className="flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] py-2.5 text-[12.5px] font-bold border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition-colors"
+      className="flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] py-2.5 text-[12.5px] font-bold border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
     >
       {icon} {label}
     </Link>
@@ -784,40 +784,40 @@ function PaymentModal({
       <div className="relative w-full sm:max-w-[420px] card rounded-b-none sm:rounded-2xl animate-rise">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-line)]">
           <h3 className="font-display font-extrabold text-[16px] capitalize">{type}</h3>
-          <button onClick={onClose} className="text-[var(--color-ink-faint)] hover:text-white"><X size={20} /></button>
+          <button onClick={onClose} className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"><X size={20} /></button>
         </div>
 
         {done ? (
           <div className="flex flex-col items-center text-center px-6 py-12">
             <div className="grid place-items-center w-16 h-16 rounded-full grad-emerald mb-4">
-              <Check size={30} className="text-white" />
+              <Check size={30} className="text-[var(--color-ink)]" />
             </div>
             <h4 className="font-display font-extrabold text-[17px] capitalize">{type === "deposit" ? "Deposit submitted" : "Withdrawal requested"}</h4>
             <p className="text-[13px] text-[var(--color-ink-dim)] mt-1.5">
               {type === "deposit" ? "We've received your payment proof. Your balance is credited once we confirm it — usually within minutes." : "Funds arrive after the operator processes your request."}
             </p>
-            <button onClick={onClose} className="mt-6 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-white text-sm">Done</button>
+            <button onClick={onClose} className="mt-6 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-[var(--color-ink)] text-sm">Done</button>
           </div>
         ) : redirectUrl ? (
           <div className="p-6 flex flex-col items-center text-center">
             <div className="grid place-items-center w-16 h-16 rounded-full grad-violet-pink mb-4">
-              <ShieldCheck size={30} className="text-white" />
+              <ShieldCheck size={30} className="text-[var(--color-ink)]" />
             </div>
             <h4 className="font-display font-extrabold text-[17px]">Approve your payment</h4>
             <p className="text-[13px] text-[var(--color-ink-dim)] mt-2 leading-relaxed">
               Tap continue to approve your {amt > 0 ? money(amt) : ""} Mobile Money deposit on a
-              <span className="font-semibold text-white"> secure payment page</span>.
+              <span className="font-semibold text-[var(--color-ink)]"> secure payment page</span>.
               After you approve, you&apos;ll come right back here and your balance updates automatically.
             </p>
             <button
               onClick={() => window.location.assign(redirectUrl)}
-              className="mt-6 w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white active:scale-[.99] transition"
+              className="mt-6 w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-[var(--color-ink)] active:scale-[.99] transition"
             >
               Continue to approve
             </button>
             <button
               onClick={() => { setRedirectUrl(null); setError(null); setStatus(""); }}
-              className="mt-2 w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-white text-[13px]"
+              className="mt-2 w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] text-[13px]"
             >
               Cancel
             </button>
@@ -825,7 +825,7 @@ function PaymentModal({
         ) : otpRef ? (
           <div className="p-5 space-y-4">
             <p className="text-[13px] text-[var(--color-ink-dim)]">
-              Enter the verification code sent by SMS to <span className="font-semibold text-white num">{phone.trim()}</span>.
+              Enter the verification code sent by SMS to <span className="font-semibold text-[var(--color-ink)] num">{phone.trim()}</span>.
             </p>
             {network === "vod" && (
               <p className="text-[12px] text-[var(--color-amber)] bg-[var(--color-amber)]/10 border border-[var(--color-amber)]/25 rounded-lg px-3 py-2">
@@ -852,7 +852,7 @@ function PaymentModal({
             <button
               onClick={submitOtp}
               disabled={busy || !otp.trim()}
-              className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white disabled:opacity-50 active:scale-[.99] transition flex items-center justify-center gap-2"
+              className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-[var(--color-ink)] disabled:opacity-50 active:scale-[.99] transition flex items-center justify-center gap-2"
             >
               {busy && <Loader2 size={16} className="animate-spin" />}
               {busy ? "Verifying…" : `Confirm deposit ${amt > 0 ? money(amt) : ""}`}
@@ -860,7 +860,7 @@ function PaymentModal({
             <button
               onClick={() => { setOtpRef(null); setOtp(""); setError(null); setStatus(""); }}
               disabled={busy}
-              className="w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-white text-[13px] disabled:opacity-50"
+              className="w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] text-[13px] disabled:opacity-50"
             >
               ← Start over
             </button>
@@ -876,7 +876,7 @@ function PaymentModal({
             </p>
             <button
               onClick={() => onSwitchToDeposit?.()}
-              className="mt-1 w-full rounded-xl py-3 font-display font-extrabold text-[14px] grad-violet-pink text-white active:scale-[.99] transition"
+              className="mt-1 w-full rounded-xl py-3 font-display font-extrabold text-[14px] grad-violet-pink text-[var(--color-ink)] active:scale-[.99] transition"
             >
               Deposit now
             </button>
@@ -895,7 +895,7 @@ function PaymentModal({
                       onClick={() => setNetwork(n.id)}
                       disabled={busy}
                       className={cn("flex flex-col items-center gap-1 rounded-xl border py-3 text-[10.5px] font-semibold transition disabled:opacity-50",
-                        network === n.id ? "border-[var(--color-violet)]/60 bg-[var(--color-surface-2)] text-white glow-violet" : "border-[var(--color-line)] text-[var(--color-ink-dim)] hover:border-[var(--color-line-2)]",
+                        network === n.id ? "border-[var(--color-violet)]/60 bg-[var(--color-surface-2)] text-[var(--color-ink)] glow-violet" : "border-[var(--color-line)] text-[var(--color-ink-dim)] hover:border-[var(--color-line-2)]",
                       )}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -948,7 +948,7 @@ function PaymentModal({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={a.logo} alt={a.network} className="w-9 h-9 rounded-md object-contain shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <div className="num text-[17px] font-extrabold text-white tracking-wide leading-tight">{a.number}</div>
+                        <div className="num text-[17px] font-extrabold text-[var(--color-ink)] tracking-wide leading-tight">{a.number}</div>
                         <div className="text-[11px] text-[var(--color-ink-dim)] truncate flex items-center gap-1.5">
                           {flag && (
                             /* eslint-disable-next-line @next/next/no-img-element */
@@ -960,7 +960,7 @@ function PaymentModal({
                       <button
                         type="button"
                         onClick={() => copyNumber(a.number)}
-                        className="shrink-0 flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-ink-dim)] hover:text-white transition"
+                        className="shrink-0 flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] transition"
                       >
                         {copiedNum === a.number ? <><Check size={13} className="text-[var(--color-emerald)]" /> Copied</> : "Copy"}
                       </button>
@@ -990,7 +990,7 @@ function PaymentModal({
                       onClick={() => setNetwork(n.id)}
                       disabled={busy}
                       className={cn("flex flex-col items-center gap-1 rounded-xl border py-3 text-[10.5px] font-semibold transition disabled:opacity-50",
-                        network === n.id ? "border-[var(--color-violet)]/60 bg-[var(--color-surface-2)] text-white glow-violet" : "border-[var(--color-line)] text-[var(--color-ink-dim)] hover:border-[var(--color-line-2)]",
+                        network === n.id ? "border-[var(--color-violet)]/60 bg-[var(--color-surface-2)] text-[var(--color-ink)] glow-violet" : "border-[var(--color-line)] text-[var(--color-ink-dim)] hover:border-[var(--color-line-2)]",
                       )}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1029,7 +1029,7 @@ function PaymentModal({
               </div>
               <div className="grid grid-cols-4 gap-2 mt-2">
                 {quick.map((q) => (
-                  <button key={q} onClick={() => setAmount(String(q))} disabled={busy} className="num text-[12px] font-bold rounded-lg py-2 border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-white transition disabled:opacity-50">
+                  <button key={q} onClick={() => setAmount(String(q))} disabled={busy} className="num text-[12px] font-bold rounded-lg py-2 border border-[var(--color-line)] bg-[var(--color-surface-2)] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] transition disabled:opacity-50">
                     {q}
                   </button>
                 ))}
@@ -1046,7 +1046,7 @@ function PaymentModal({
                 <label className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">Payment screenshot</label>
                 <label className={cn(
                   "mt-2 flex items-center justify-center gap-2 rounded-xl border border-dashed px-3.5 py-3 text-[12.5px] cursor-pointer transition",
-                  file ? "border-[var(--color-emerald)]/50 text-[var(--color-emerald)] bg-[var(--color-emerald)]/8" : "border-[var(--color-line-2)] text-[var(--color-ink-dim)] hover:text-white",
+                  file ? "border-[var(--color-emerald)]/50 text-[var(--color-emerald)] bg-[var(--color-emerald)]/8" : "border-[var(--color-line-2)] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]",
                 )}>
                   {file ? <><Check size={15} /> {file.name.length > 28 ? file.name.slice(0, 25) + "…" : file.name}</> : "📷 Tap to upload your payment screenshot"}
                   <input
@@ -1061,7 +1061,7 @@ function PaymentModal({
             )}
 
             {type === "withdraw" && (
-              <p className="text-[11.5px] text-[var(--color-ink-dim)]">Available: <span className="num font-bold text-white">{money(user.balance)}</span></p>
+              <p className="text-[11.5px] text-[var(--color-ink-dim)]">Available: <span className="num font-bold text-[var(--color-ink)]">{money(user.balance)}</span></p>
             )}
 
             {status && !error && (
@@ -1074,7 +1074,7 @@ function PaymentModal({
             <button
               onClick={type === "deposit" ? deposit : withdraw}
               disabled={busy || !(amt > 0) || belowMin || (type === "deposit" && !useHostedCheckout && !useFlutterwaveMomo && !file) || (type === "deposit" && useFlutterwaveMomo && !phone.trim()) || (type === "withdraw" && !phone.trim())}
-              className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white disabled:opacity-50 active:scale-[.99] transition capitalize flex items-center justify-center gap-2"
+              className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-[var(--color-ink)] disabled:opacity-50 active:scale-[.99] transition capitalize flex items-center justify-center gap-2"
             >
               {busy && <Loader2 size={16} className="animate-spin" />}
               {type === "deposit"
@@ -1140,17 +1140,17 @@ function ChangePasswordModal({ userId, onClose }: { userId: string; onClose: () 
       <div className="relative w-full sm:max-w-[420px] card rounded-b-none sm:rounded-2xl animate-rise">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-line)]">
           <h3 className="font-display font-extrabold text-[16px]">Change password</h3>
-          <button onClick={onClose} disabled={busy} className="text-[var(--color-ink-faint)] hover:text-white disabled:opacity-40"><X size={20} /></button>
+          <button onClick={onClose} disabled={busy} className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-40"><X size={20} /></button>
         </div>
 
         {done ? (
           <div className="flex flex-col items-center text-center px-6 py-12">
             <div className="grid place-items-center w-16 h-16 rounded-full grad-emerald mb-4">
-              <Check size={30} className="text-white" />
+              <Check size={30} className="text-[var(--color-ink)]" />
             </div>
             <h4 className="font-display font-extrabold text-[17px]">Password updated</h4>
             <p className="text-[13px] text-[var(--color-ink-dim)] mt-1.5">Use your new password next time you sign in.</p>
-            <button onClick={onClose} className="mt-6 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-white text-sm">Done</button>
+            <button onClick={onClose} className="mt-6 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-[var(--color-ink)] text-sm">Done</button>
           </div>
         ) : (
           <div className="p-5 space-y-4">
@@ -1165,7 +1165,7 @@ function ChangePasswordModal({ userId, onClose }: { userId: string; onClose: () 
             <button
               onClick={submit}
               disabled={!canSubmit}
-              className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white disabled:opacity-50 active:scale-[.99] transition flex items-center justify-center gap-2"
+              className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-[var(--color-ink)] disabled:opacity-50 active:scale-[.99] transition flex items-center justify-center gap-2"
             >
               {busy && <Loader2 size={16} className="animate-spin" />}
               Update password

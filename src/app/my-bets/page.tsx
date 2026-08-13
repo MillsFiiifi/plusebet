@@ -77,7 +77,7 @@ function EmptyState({ title, body, cta }: { title: string; body: string; cta: { 
       </div>
       <h3 className="font-display font-bold text-[15px]">{title}</h3>
       <p className="text-[12.5px] text-[var(--color-ink-faint)] mt-1.5">{body}</p>
-      <Link href={cta.href} className="mt-5 rounded-xl px-5 py-2.5 font-display font-bold grad-violet-pink text-white text-[13px]">{cta.label}</Link>
+      <Link href={cta.href} className="mt-5 rounded-xl px-5 py-2.5 font-display font-bold grad-violet-pink text-[var(--color-ink)] text-[13px]">{cta.label}</Link>
     </div>
   );
 }

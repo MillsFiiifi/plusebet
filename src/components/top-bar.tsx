@@ -112,7 +112,7 @@ export function TopBar({ onMenu }: { onMenu?: () => void }) {
           <button
             onClick={onMenu}
             aria-label="Open menu"
-            className="lg:hidden grid place-items-center w-9 h-9 -ml-1 rounded-[var(--radius-ctl)] text-[var(--color-ink-dim)] hover:text-white hover:bg-[var(--color-surface-2)] transition-colors"
+            className="lg:hidden grid place-items-center w-9 h-9 -ml-1 rounded-[var(--radius-ctl)] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)] transition-colors"
           >
             <Menu size={20} />
           </button>
@@ -131,8 +131,8 @@ export function TopBar({ onMenu }: { onMenu?: () => void }) {
                   className={cn(
                     "relative flex items-center gap-1.5 px-2.5 h-[54px] text-[12.5px] font-semibold transition-colors",
                     active
-                      ? "text-white"
-                      : "text-[var(--color-ink-dim)] hover:text-white",
+                      ? "text-[var(--color-ink)]"
+                      : "text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]",
                   )}
                 >
                   <Icon size={14} strokeWidth={active ? 2.4 : 2} />
@@ -191,7 +191,7 @@ export function TopBar({ onMenu }: { onMenu?: () => void }) {
                   aria-expanded={profileOpen}
                   className="flex items-center gap-0.5 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] p-1 hover:border-[var(--color-line-2)] transition-colors"
                 >
-                  <span className="grid place-items-center w-7 h-7 rounded-[6px] bg-[var(--color-surface-3)] text-white font-bold text-[11px]">
+                  <span className="grid place-items-center w-7 h-7 rounded-[6px] bg-[var(--color-surface-3)] text-[var(--color-ink)] font-bold text-[11px]">
                     {initials(userName)}
                   </span>
                   <ChevronDown
@@ -259,7 +259,7 @@ export function TopBar({ onMenu }: { onMenu?: () => void }) {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 font-semibold text-[12.5px] text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition-colors"
+                className="rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 font-semibold text-[12.5px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
               >
                 Log in
               </Link>
@@ -294,7 +294,7 @@ function ProfileItem({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-ctl)] text-[12.5px] font-medium text-[var(--color-ink-dim)] hover:text-white hover:bg-[var(--color-surface-2)] transition-colors"
+      className="flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-ctl)] text-[12.5px] font-medium text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)] transition-colors"
     >
       <span className="w-4 grid place-items-center">{icon}</span>
       {label}

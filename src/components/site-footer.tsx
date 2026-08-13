@@ -30,7 +30,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
     title: "Company",
     links: [
-      { label: "About Plusebet", href: "#" },
+      { label: "About Betlixx", href: "#" },
       { label: "Careers", href: "#" },
       { label: "Press", href: "#" },
       { label: "Affiliates", href: "#" },
@@ -84,7 +84,7 @@ export function SiteFooter() {
                   <li key={l.label}>
                     <Link
                       href={l.href}
-                      className="text-[12.5px] text-[var(--color-ink-dim)] hover:text-white transition-colors"
+                      className="text-[12.5px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] transition-colors"
                     >
                       {l.label}
                     </Link>
@@ -97,7 +97,7 @@ export function SiteFooter() {
 
         <div className="mt-8 pt-5 border-t border-[var(--color-line)] flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[11.5px] text-[var(--color-ink-faint)]">
-            © {new Date().getFullYear()} Plusebet. All rights reserved.
+            © {new Date().getFullYear()} Betlixx. All rights reserved.
           </p>
           <p className="text-[11.5px] text-[var(--color-ink-faint)] flex items-center gap-2">
             <span className="num font-bold text-[var(--color-ink-dim)] border border-[var(--color-line-2)] rounded px-1.5 py-0.5">

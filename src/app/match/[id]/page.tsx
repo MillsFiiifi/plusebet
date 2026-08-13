@@ -76,7 +76,7 @@ export default function MatchDetail({
       <AppShell tabs={false}>
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--color-ink-dim)] hover:text-white mb-3 transition-colors"
+          className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] mb-3 transition-colors"
         >
           <ChevronLeft size={15} /> Back to sports
         </Link>
@@ -97,7 +97,7 @@ export default function MatchDetail({
     <AppShell tabs={false}>
       <Link
         href="/"
-        className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--color-ink-dim)] hover:text-white mb-2.5 transition-colors"
+        className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] mb-2.5 transition-colors"
       >
         <ChevronLeft size={15} /> Back to sports
       </Link>
@@ -112,13 +112,13 @@ export default function MatchDetail({
           <div className="flex items-center gap-1 ml-auto shrink-0">
             <button
               aria-label="Add to favourites"
-              className="grid place-items-center w-7 h-7 rounded-[var(--radius-ctl)] text-[var(--color-ink-faint)] hover:text-white hover:bg-[var(--color-surface-3)] transition-colors"
+              className="grid place-items-center w-7 h-7 rounded-[var(--radius-ctl)] text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-3)] transition-colors"
             >
               <Star size={14} />
             </button>
             <button
               aria-label="Share match"
-              className="grid place-items-center w-7 h-7 rounded-[var(--radius-ctl)] text-[var(--color-ink-faint)] hover:text-white hover:bg-[var(--color-surface-3)] transition-colors"
+              className="grid place-items-center w-7 h-7 rounded-[var(--radius-ctl)] text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-3)] transition-colors"
             >
               <Share2 size={14} />
             </button>

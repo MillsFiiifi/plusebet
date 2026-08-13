@@ -19,7 +19,7 @@ export function SportTabs() {
               className={cn(
                 "relative shrink-0 flex items-center gap-1.5 py-2.5 text-[12.5px] font-semibold transition-colors",
                 on
-                  ? "text-white"
+                  ? "text-[var(--color-ink)]"
                   : "text-[var(--color-ink-faint)] hover:text-[var(--color-ink-dim)]",
               )}
             >

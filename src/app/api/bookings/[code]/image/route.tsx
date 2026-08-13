@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 type Params = { params: Promise<{ code: string }> }
 
-// A shareable PNG of a booked slip — big code, the teams, the odds, Plusebet
+// A shareable PNG of a booked slip — big code, the teams, the odds, Betlixx
 // branding. Punters share this straight to WhatsApp / status.
 export async function GET(_req: Request, { params }: Params) {
   const { code } = await params
@@ -130,7 +130,7 @@ export async function GET(_req: Request, { params }: Params) {
             </div>
           </div>
           <div style={{ display: 'flex', fontSize: 26, color: '#e5e7eb', maxWidth: 420, textAlign: 'right' }}>
-            Load this code on Plusebet to play
+            Load this code on Betlixx to play
           </div>
         </div>
       </div>

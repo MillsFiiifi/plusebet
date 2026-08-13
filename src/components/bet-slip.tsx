@@ -173,20 +173,20 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
       const res = await fetch(`/api/bookings/${bookedCode}/image`);
       if (!res.ok) throw new Error("image");
       const blob = await res.blob();
-      const file = new File([blob], `plusebet-${bookedCode}.png`, {
+      const file = new File([blob], `betlixx-${bookedCode}.png`, {
         type: "image/png",
       });
-      const text = `Plusebet booking code: ${bookedCode} — load it on Plusebet to play.`;
+      const text = `Betlixx booking code: ${bookedCode} — load it on Betlixx to play.`;
       const nav = navigator as Navigator & {
         canShare?: (d: unknown) => boolean;
       };
       if (nav.share && nav.canShare?.({ files: [file] })) {
-        await nav.share({ files: [file], title: "Plusebet booking", text });
+        await nav.share({ files: [file], title: "Betlixx booking", text });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `plusebet-${bookedCode}.png`;
+        a.download = `betlixx-${bookedCode}.png`;
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -255,13 +255,13 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
         </p>
         <button
           onClick={goLogin}
-          className="mt-5 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-white text-sm"
+          className="mt-5 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-[var(--color-ink)] text-sm"
         >
           Log in / Sign up
         </button>
         <button
           onClick={() => setNeedsLogin(false)}
-          className="mt-2 w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-white text-[13px]"
+          className="mt-2 w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] text-[13px]"
         >
           Back to slip
         </button>
@@ -273,7 +273,7 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
     return (
       <div className="flex flex-col items-center text-center px-5 py-8 overflow-y-auto no-scrollbar animate-rise">
         <div className="grid place-items-center w-14 h-14 rounded-full grad-violet-pink mb-3">
-          <BookmarkPlus className="text-white" size={26} />
+          <BookmarkPlus className="text-[var(--color-ink)]" size={26} />
         </div>
         <h3 className="font-display font-extrabold text-lg">Slip Booked!</h3>
         <p className="text-[13px] text-[var(--color-ink-dim)] mt-1">
@@ -293,7 +293,7 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
         <button
           onClick={shareImage}
           disabled={sharing}
-          className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-white disabled:opacity-60 active:scale-[.99] transition"
+          className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-[var(--color-ink)] disabled:opacity-60 active:scale-[.99] transition"
         >
           {sharing ? (
             <Loader2 size={16} className="animate-spin" />
@@ -310,7 +310,7 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
           <span className="num text-[20px] font-extrabold tracking-[0.2em] grad-text">
             {bookedCode}
           </span>
-          <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--color-ink-dim)] group-hover:text-white">
+          <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--color-ink-dim)] group-hover:text-[var(--color-ink)]">
             {copied ? (
               <>
                 <Check size={15} className="text-[var(--color-emerald)]" />{" "}
@@ -330,7 +330,7 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
             clear();
             onPlaced?.();
           }}
-          className="mt-4 w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-white text-[13px]"
+          className="mt-4 w-full rounded-xl py-2.5 font-display font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] text-[13px]"
         >
           Done
         </button>
@@ -342,7 +342,7 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
     return (
       <div className="flex flex-col items-center text-center px-5 py-10 animate-rise">
         <div className="grid place-items-center w-16 h-16 rounded-full grad-emerald mb-4">
-          <ShieldCheck className="text-white" size={30} />
+          <ShieldCheck className="text-[var(--color-ink)]" size={30} />
         </div>
         <h3 className="font-display font-extrabold text-lg">Bet Placed!</h3>
         <p className="text-[13px] text-[var(--color-ink-dim)] mt-1">
@@ -359,7 +359,7 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
             clear();
             onPlaced?.();
           }}
-          className="mt-5 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-white text-sm"
+          className="mt-5 w-full rounded-xl py-3 font-display font-bold grad-violet-pink text-[var(--color-ink)] text-sm"
         >
           Place Another
         </button>
@@ -400,7 +400,7 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
             <button
               onClick={loadBookingCode}
               disabled={loadingCode}
-              className="rounded-xl px-4 grad-violet-pink text-white font-display font-bold text-[13px] disabled:opacity-50 flex items-center gap-1.5"
+              className="rounded-xl px-4 grad-violet-pink text-[var(--color-ink)] font-display font-bold text-[13px] disabled:opacity-50 flex items-center gap-1.5"
             >
               {loadingCode ? (
                 <Loader2 size={15} className="animate-spin" />
@@ -474,8 +474,8 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
               className={cn(
                 "flex-1 num text-[11.5px] font-bold rounded-[var(--radius-ctl)] py-1.5 border transition-colors",
                 stake === q
-                  ? "bg-[var(--color-surface-3)] border-[var(--color-line-2)] text-white"
-                  : "bg-[var(--color-surface-2)] border-[var(--color-line)] text-[var(--color-ink-dim)] hover:text-white",
+                  ? "bg-[var(--color-surface-3)] border-[var(--color-line-2)] text-[var(--color-ink)]"
+                  : "bg-[var(--color-surface-2)] border-[var(--color-line)] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]",
               )}
             >
               {q}
@@ -543,7 +543,7 @@ function SlipBody({ onPlaced }: { onPlaced?: () => void }) {
         <button
           onClick={book}
           disabled={booking || busy}
-          className="w-full flex items-center justify-center gap-2 rounded-[var(--radius-ctl)] py-2.5 font-bold text-[12.5px] border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] disabled:opacity-50 active:scale-[.99] transition-colors"
+          className="w-full flex items-center justify-center gap-2 rounded-[var(--radius-ctl)] py-2.5 font-bold text-[12.5px] border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] disabled:opacity-50 active:scale-[.99] transition-colors"
         >
           {booking ? (
             <Loader2 size={14} className="animate-spin" />
@@ -638,7 +638,7 @@ export function MobileBetSlip() {
               <button
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close bet slip"
-                className="text-[var(--color-ink-dim)] hover:text-white"
+                className="text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]"
               >
                 <X size={19} />
               </button>

@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to continue to Plusebet.">
+    <AuthShell title="Welcome back" subtitle="Sign in to continue to Betlixx.">
       <form onSubmit={onSubmit}>
         <Field label="Phone or Email">
           <input
@@ -65,7 +65,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               className={inputCls + " pr-11"}
             />
-            <button type="button" onClick={() => setShow((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-faint)] hover:text-white">
+            <button type="button" onClick={() => setShow((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]">
               {show ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>

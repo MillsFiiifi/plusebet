@@ -28,15 +28,19 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Plusebet — Premium Sports Betting",
+  title: "Betlixx — Premium Sports Betting",
   description:
-    "Plusebet — premium international sports betting. Live odds, mobile-money payouts, verified tickets.",
+    "Betlixx — premium international sports betting. Live odds, mobile-money payouts, verified tickets.",
   manifest: "/manifest.webmanifest",
-  applicationName: "Plusebet",
+  applicationName: "Betlixx",
   appleWebApp: {
     capable: true,
-    title: "Plusebet",
-    statusBarStyle: "black-translucent",
+    title: "Betlixx",
+    // "default" = dark status-bar text on a light bar. The previous
+    // "black-translucent" made the bar transparent and drew the clock and
+    // battery in WHITE over the page itself — invisible now that the page
+    // behind it is white, and it also let content slide under the notch.
+    statusBarStyle: "default",
   },
   icons: {
     icon: [
@@ -48,7 +52,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0d0c",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

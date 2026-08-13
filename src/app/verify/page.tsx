@@ -234,7 +234,7 @@ function ResultCard({ r, onReset }: { r: Result; onReset: () => void }) {
 
         <button
           onClick={onReset}
-          className="mt-5 w-full flex items-center justify-center gap-2 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] py-2.5 text-[12.5px] font-semibold text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition-colors"
+          className="mt-5 w-full flex items-center justify-center gap-2 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] py-2.5 text-[12.5px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
         >
           <RotateCcw size={14} /> Verify another ticket
         </button>

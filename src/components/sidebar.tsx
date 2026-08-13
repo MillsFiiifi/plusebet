@@ -33,8 +33,8 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
               className={cn(
                 "relative flex items-center gap-2.5 rounded-[var(--radius-ctl)] px-2.5 py-[7px] text-[12.5px] font-medium transition-colors",
                 active
-                  ? "bg-[var(--color-surface-2)] text-white"
-                  : "text-[var(--color-ink-dim)] hover:text-white hover:bg-[var(--color-surface)]",
+                  ? "bg-[var(--color-surface-2)] text-[var(--color-ink)]"
+                  : "text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface)]",
               )}
             >
               {/* A 2px accent rail marks the active item — enough signal
@@ -59,7 +59,7 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
             key={c.id}
             href="/"
             onClick={onNavigate}
-            className="flex items-center gap-2.5 rounded-[var(--radius-ctl)] px-2.5 py-[7px] text-[12.5px] text-[var(--color-ink-dim)] hover:text-white hover:bg-[var(--color-surface)] transition-colors"
+            className="flex items-center gap-2.5 rounded-[var(--radius-ctl)] px-2.5 py-[7px] text-[12.5px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface)] transition-colors"
           >
             <CountryFlag emoji={c.flag} className="shrink-0" />
             <span className="truncate">{c.name}</span>
@@ -73,7 +73,7 @@ function SidebarInner({ onNavigate }: { onNavigate?: () => void }) {
             key={s.id}
             href="/"
             onClick={onNavigate}
-            className="flex items-center gap-2.5 rounded-[var(--radius-ctl)] px-2.5 py-[7px] text-[12.5px] text-[var(--color-ink-dim)] hover:text-white hover:bg-[var(--color-surface)] transition-colors"
+            className="flex items-center gap-2.5 rounded-[var(--radius-ctl)] px-2.5 py-[7px] text-[12.5px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface)] transition-colors"
           >
             <span className="w-[15px] text-center shrink-0">{s.icon}</span>
             {s.name}
@@ -128,7 +128,7 @@ export function MobileSidebar({
           <button
             onClick={onClose}
             aria-label="Close menu"
-            className="text-[var(--color-ink-dim)] hover:text-white"
+            className="text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]"
           >
             <X size={19} />
           </button>

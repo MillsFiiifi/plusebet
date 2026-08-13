@@ -1,11 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="32" y2="32">
-      <stop stop-color="#8b5cf6"/>
-      <stop offset="1" stop-color="#ec4899"/>
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="9" fill="#0c0f1f" stroke="url(#g)" stroke-width="1.5"/>
-  <path d="M8 22L13 10L16 18L19 10L24 22" stroke="url(#g)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="24" cy="22" r="2.3" fill="#fbbf24"/>
+  <!--
+    Betlixx favicon.
+
+    The line is deliberately ASYMMETRIC. The previous mark's two even peaks
+    rendered as a capital "M" once it was a solid glyph on a solid tile —
+    the wrong initial for this brand. Rise / small correction / bigger rise
+    reads as an odds line instead and cannot be mistaken for a letter.
+
+    Solid tile with the glyph reversed out, rather than the old outlined
+    version: a 1.5px stroke collapsed to a smudge at 16px, and a dark fill
+    disappeared against dark browser chrome. Colours are literals because
+    this file is served standalone, with no stylesheet to resolve vars.
+  -->
+  <rect width="32" height="32" rx="8" fill="#00873f"/>
+  <path d="M7 22L13 14L18 18L25 8"
+        stroke="#ffffff"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"/>
 </svg>

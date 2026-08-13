@@ -46,7 +46,7 @@ export function AuthShell({
           </ul>
         </div>
         <p className="text-[11px] text-[var(--color-ink-faint)]">
-          © {new Date().getFullYear()} Plusebet. 18+ · Play responsibly.
+          © {new Date().getFullYear()} Betlixx. 18+ · Play responsibly.
         </p>
       </div>
 
@@ -55,7 +55,7 @@ export function AuthShell({
         <div className="w-full max-w-[380px]">
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-ink-dim)] hover:text-white mb-6 transition-colors"
+            className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] mb-6 transition-colors"
           >
             <ChevronLeft size={14} /> Back to home
           </Link>

@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /* ============================================================
-   PLUSEBET — Design System v2
-   Sportsbook dark. ONE accent. High density.
+   BETLIXX — Design System v2
+   Sportsbook LIGHT. ONE accent. High density.
 
    THE RULE THAT MAKES THIS WORK:
    Accent green is reserved for exactly two things —
@@ -17,35 +17,52 @@
      loss    = lost, negative, live (urgency)
      warn    = pending, awaiting settlement
    Everything else is neutral grey. That's the whole palette.
+
+   ON A WHITE PAGE, every semantic colour has to clear ~4.5:1
+   BOTH as text on white AND as a fill under white text. The
+   bright dark-theme greens/reds/ambers cleared neither, so
+   each is a deeper shade here. That is the whole reason these
+   are not simply the dark values re-used.
    ============================================================ */
 
 @theme {
-  /* ---- Surfaces (near-black, slightly green-shifted) ---- */
-  --color-bg: #0a0d0c;
-  --color-bg-2: #0e1211;
-  --color-surface: #121716;
-  --color-surface-2: #18201e;
-  --color-surface-3: #212b28;
-  --color-elevated: #2a3532;
+  /* ---- Surfaces ----
+     The page is genuinely white; structure is carried by 1px borders
+     rather than by raised grey panels. Bars and table headers take the
+     faint grey so they separate from the cards sitting on them. */
+  --color-bg: #ffffff;
+  --color-bg-2: #f6f7f7;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f6f5;
+  --color-surface-3: #e9edeb;
+  --color-elevated: #dce2df;
 
   /* ---- Borders ---- */
-  --color-line: rgba(255, 255, 255, 0.07);
-  --color-line-2: rgba(255, 255, 255, 0.14);
+  --color-line: rgba(13, 18, 17, 0.11);
+  --color-line-2: rgba(13, 18, 17, 0.2);
 
   /* ---- Text ---- */
-  --color-ink: #ffffff;
-  --color-ink-dim: #9aa5a1;
-  --color-ink-faint: #6b7873;
+  --color-ink: #0d1211;
+  --color-ink-dim: #5b6663;
+  /* Carries kickoff times, league names and field labels at 10-13px. The
+     dark theme's faint grey inverted to ~3.4:1 here, which is below AA for
+     text that small. This clears 5.0:1 on white and 4.6:1 on the grey
+     league-header band — it has to pass on both, since faint text sits on
+     each. Light themes cannot go as faint as dark ones. */
+  --color-ink-faint: #68716d;
 
-  /* ---- THE accent ---- */
-  --color-accent: #00e27a;
-  --color-accent-hi: #3bff9c; /* hover only */
-  --color-accent-ink: #04120b; /* text ON accent — never white */
+  /* ---- THE accent ----
+     #00e27a from the dark theme is ~1.7:1 on white — unusable for text
+     and unusable under white text. This deeper green clears ~5:1 in
+     both directions, so one value serves as fill AND as text. */
+  --color-accent: #00873f;
+  --color-accent-hi: #006c32; /* hover only — darker, not lighter, on light */
+  --color-accent-ink: #ffffff; /* text ON accent */
 
-  /* ---- Semantic ---- */
-  --color-win: #00e27a; /* money in / won — same as accent, deliberately */
-  --color-loss: #ff4d6a; /* lost / negative / live */
-  --color-warn: #f5b93c; /* pending only */
+  /* ---- Semantic (same contrast reasoning as the accent) ---- */
+  --color-win: #00873f; /* money in / won — same as accent, deliberately */
+  --color-loss: #d0243f; /* lost / negative / live */
+  --color-warn: #8a6100; /* pending only */
 
   /* ------------------------------------------------------------
      Legacy aliases.
@@ -120,15 +137,16 @@ html {
 }
 
 body {
-  /* Flat. The old build painted two large radial gradients here; on the
+  /* Flat white. The old build painted two large radial gradients here; on the
      mid-range Android this audience actually uses, a full-viewport gradient
      repaints on every scroll. Solid colour is free. */
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-body);
   font-size: 13px;
+  /* Greyscale smoothing is a dark-theme fix (it thins light-on-dark text).
+     On a light page it makes text look anaemic, so it is dropped. */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   min-height: 100dvh;
 }
 
@@ -165,12 +183,12 @@ img, svg { user-select: none; -webkit-user-drag: none; }
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(13, 18, 17, 0.18);
   border-radius: 99px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(13, 18, 17, 0.32); background-clip: padding-box; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -257,9 +275,12 @@ img, svg { user-select: none; -webkit-user-drag: none; }
 
 /* ---- Primary action ----
    Legacy names kept so payment-critical files need no edits; they now
-   render as one flat accent fill. `color` is set here (unlayered CSS
-   beats Tailwind's layered `text-white`) because white on accent green
-   is ~1.8:1 and unreadable — accent-ink is ~12:1. */
+   render as one flat accent fill. `color` is set here rather than left to
+   the utility class so the fill and its text can never drift apart: these
+   rules are unlayered, and unlayered CSS beats Tailwind's layered
+   utilities regardless of specificity. That is also what lets call sites
+   keep whatever text colour they were already asking for — it is
+   overridden here either way. */
 .grad-violet-pink,
 .grad-emerald,
 .grad-cyan,
@@ -274,7 +295,7 @@ img, svg { user-select: none; -webkit-user-drag: none; }
 .btn-primary:hover:not(:disabled) {
   background: var(--color-accent-hi);
 }
-/* Icons/spans inside inherit the dark ink rather than the white they ask for. */
+/* Icons/spans inside inherit the accent's ink rather than whatever they ask for. */
 .grad-violet-pink *,
 .grad-emerald *,
 .grad-cyan *,
@@ -282,9 +303,9 @@ img, svg { user-select: none; -webkit-user-drag: none; }
 
 .grad-gold {
   background: var(--color-warn);
-  color: #1a1204;
+  color: #ffffff;
 }
-.grad-gold * { color: #1a1204; }
+.grad-gold * { color: #ffffff; }
 
 /* Was a three-stop gradient on text. Now simply the accent — a payout
    figure should read as money, not as decoration. */
@@ -329,12 +350,12 @@ img, svg { user-select: none; -webkit-user-drag: none; }
    Solid, not translucent. One backdrop-filter layer costs a full-screen
    composite per frame while scrolling; this UI had three stacked. */
 .glass {
-  background: var(--color-bg-2);
+  background: var(--color-bg);
 }
 
 /* ---- Skeleton ---- */
 .shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,.03) 25%, rgba(255,255,255,.07) 50%, rgba(255,255,255,.03) 75%);
+  background: linear-gradient(90deg, rgba(13,18,17,.05) 25%, rgba(13,18,17,.10) 50%, rgba(13,18,17,.05) 75%);
   background-size: 200% 100%;
   animation: var(--animate-shimmer);
 }

@@ -17,7 +17,7 @@ const REPLIES: Record<string, string> = {
 export function SupportChat() {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([
-    { from: "bot", text: "👋 Hi, I'm the Plusebet assistant. How can I help you win today?" },
+    { from: "bot", text: "👋 Hi, I'm the Betlixx assistant. How can I help you win today?" },
   ]);
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -59,12 +59,12 @@ export function SupportChat() {
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] border-2 border-[var(--color-bg-2)]" />
             </div>
             <div>
-              <div className="font-display font-bold text-[13.5px]">Plusebet Support</div>
+              <div className="font-display font-bold text-[13.5px]">Betlixx Support</div>
               <div className="flex items-center gap-1.5 text-[10.5px] text-[var(--color-accent)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]" /> Online · Replies instantly
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="ml-auto text-[var(--color-ink-faint)] hover:text-white">
+            <button onClick={() => setOpen(false)} className="ml-auto text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]">
               <X size={18} />
             </button>
           </div>

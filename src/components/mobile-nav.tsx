@@ -51,7 +51,7 @@ export function MobileNav() {
                 <span
                   className={cn(
                     "text-[9.5px] font-semibold",
-                    active ? "text-white" : "text-[var(--color-ink-faint)]",
+                    active ? "text-[var(--color-ink)]" : "text-[var(--color-ink-faint)]",
                   )}
                 >
                   {it.label}

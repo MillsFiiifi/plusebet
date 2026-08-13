@@ -52,7 +52,7 @@ export function WinnersTicker() {
         <div className="flex items-center gap-7 whitespace-nowrap animate-[ticker_42s_linear_infinite] hover:[animation-play-state:paused] pl-6">
           {items.map((w, i) => (
             <span key={i} className="text-[11.5px] text-[var(--color-ink-dim)]">
-              <span className="text-white font-semibold">{w.masked}</span> won{" "}
+              <span className="text-[var(--color-ink)] font-semibold">{w.masked}</span> won{" "}
               {/* Accent here is money, not decoration — the one other role it holds. */}
               <span className="num font-bold text-[var(--color-accent)]">
                 {formatMoneyWithCurrency(w.amount, w.currency)}

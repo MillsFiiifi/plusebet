@@ -1,13 +1,13 @@
-/* Plusebet service worker — live goal alerts via Web Push. */
+/* Betlixx service worker — live goal alerts via Web Push. */
 
 self.addEventListener('push', (event) => {
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
   } catch (_e) {
-    data = { title: 'Plusebet', body: event.data ? event.data.text() : '' };
+    data = { title: 'Betlixx', body: event.data ? event.data.text() : '' };
   }
-  const title = data.title || 'Plusebet';
+  const title = data.title || 'Betlixx';
   const options = {
     body: data.body || '',
     icon: '/icon-192.png',

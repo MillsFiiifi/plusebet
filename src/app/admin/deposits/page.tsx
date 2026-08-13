@@ -638,7 +638,7 @@ function StatusPill({
     tone === 'bad'
       ? 'bg-destructive text-destructive-foreground'
       : tone === 'warn'
-        ? 'bg-amber-500 text-white'
+        ? 'bg-amber-500 text-[var(--color-ink)]'
         : 'bg-primary text-primary-foreground'
   return (
     <button

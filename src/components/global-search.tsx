@@ -67,7 +67,7 @@ export function GlobalSearch({
           <button
             onClick={close}
             aria-label="Close search"
-            className="text-[var(--color-ink-faint)] hover:text-white shrink-0"
+            className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] shrink-0"
           >
             <X size={17} />
           </button>

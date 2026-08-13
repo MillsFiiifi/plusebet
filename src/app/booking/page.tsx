@@ -133,7 +133,7 @@ export default function BookingPage() {
                   <button
                     onClick={load}
                     disabled={loading}
-                    className="m-1.5 flex items-center gap-1.5 rounded-xl grad-violet-pink text-white px-4 py-2.5 font-display font-bold text-[13px] active:scale-95 transition disabled:opacity-60"
+                    className="m-1.5 flex items-center gap-1.5 rounded-xl grad-violet-pink text-[var(--color-ink)] px-4 py-2.5 font-display font-bold text-[13px] active:scale-95 transition disabled:opacity-60"
                   >
                     {loading ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -193,7 +193,7 @@ export default function BookingPage() {
                         <div className="min-w-0">
                           <p className="text-[13px] font-semibold truncate">{l.match}</p>
                           <p className="text-[11.5px] text-[var(--color-ink-dim)] truncate">
-                            {l.market} · <span className="text-white">{l.pick}</span> · {l.odds.toFixed(2)}
+                            {l.market} · <span className="text-[var(--color-ink)]">{l.pick}</span> · {l.odds.toFixed(2)}
                           </p>
                         </div>
                         <LegBadge leg={l} />
@@ -210,14 +210,14 @@ export default function BookingPage() {
                 <div className="mt-5 flex gap-2">
                   <button
                     onClick={reset}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--color-line)] px-4 py-3 text-[13px] font-semibold text-[var(--color-ink-dim)] hover:text-white transition"
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--color-line)] px-4 py-3 text-[13px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] transition"
                   >
                     <RotateCcw size={14} /> Another code
                   </button>
                   {data.playable ? (
                     <button
                       onClick={loadIntoSlip}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl grad-violet-pink text-white px-4 py-3 font-display font-bold text-[13px] active:scale-95 transition"
+                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl grad-violet-pink text-[var(--color-ink)] px-4 py-3 font-display font-bold text-[13px] active:scale-95 transition"
                     >
                       Load into slip <ArrowRight size={15} />
                     </button>

@@ -57,13 +57,13 @@ export function StatRibbon() {
     <div className="flex gap-2 overflow-x-auto no-scrollbar mt-3">
       <Link
         href="/booking"
-        className="shrink-0 flex items-center gap-2 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-[12px] font-semibold text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition-colors"
+        className="shrink-0 flex items-center gap-2 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-[12px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
       >
         <Download size={14} /> Load booking code
       </Link>
       <Link
         href="/verify"
-        className="shrink-0 flex items-center gap-2 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-[12px] font-semibold text-[var(--color-ink-dim)] hover:text-white hover:border-[var(--color-line-2)] transition-colors"
+        className="shrink-0 flex items-center gap-2 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-[12px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
       >
         <ShieldCheck size={14} /> Verify ticket
       </Link>

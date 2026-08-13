@@ -154,7 +154,7 @@ export function MatchAdvert() {
           </div>
 
           <p className="text-[12.5px] text-[var(--color-ink-dim)] mt-4">
-            {advert.league} · <span className="text-white font-semibold">{advert.when}</span>
+            {advert.league} · <span className="text-[var(--color-ink)] font-semibold">{advert.when}</span>
           </p>
 
           {/* Odds */}

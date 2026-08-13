@@ -2,9 +2,17 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
- * Solid accent mark. The pulse-line glyph is kept — it reads as both a
- * heartbeat and a scoreline — but the two-stop gradient and the stray
- * amber dot are gone, so the logo uses the one accent like everything else.
+ * Solid accent mark: an ascending odds line.
+ *
+ * The line is deliberately asymmetric — rise, small correction, bigger rise.
+ * The previous glyph had two even peaks, which punned on the old name's
+ * "pulse" but rendered as a capital "M" once it became a solid white shape
+ * on a solid tile. That is the wrong initial for this brand, so the peaks
+ * were unbalanced into a price line, which also suits a sportsbook better
+ * and still holds its silhouette at 16px.
+ *
+ * Kept in sync with src/app/icon.svg, which must repeat the same path with
+ * literal colours because it is served standalone with no stylesheet.
  */
 // `id` is accepted but no longer read: it existed only to give each instance's
 // <linearGradient> a unique id. With a solid fill there is nothing to
@@ -25,11 +33,12 @@ export function LogoMark({
     >
       <rect width="32" height="32" rx="8" fill="var(--color-accent)" />
       <path
-        d="M7 21.5L12.5 10.5L16 18.5L19.5 10.5L25 21.5"
+        d="M7 22L13 14L18 18L25 8"
         stroke="var(--color-accent-ink)"
-        strokeWidth="2.6"
+        strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
+        fill="none"
       />
     </svg>
   );
@@ -54,7 +63,7 @@ export function Brand({
     <span className={cn("flex items-center gap-2 select-none", className)}>
       <LogoMark size={size} id={id} />
       <span className="font-display font-extrabold tracking-[-0.02em] text-[17px] leading-none">
-        Pluse<span className="text-[var(--color-accent)]">bet</span>
+        Bet<span className="text-[var(--color-accent)]">lixx</span>
       </span>
       {pro && (
         <span className="num text-[8.5px] font-bold tracking-[0.16em] px-1.5 py-0.5 rounded bg-[var(--color-surface-2)] border border-[var(--color-line)] text-[var(--color-ink-faint)]">
@@ -144,9 +153,15 @@ export function TeamBadge({
         width: size,
         height: size,
         fontSize: Math.max(7, size * (small ? 0.42 : 0.34)),
-        background: `${color}26`,
-        border: small ? "none" : `1px solid ${color}55`,
-        color: "#fff",
+        // Tint + ring carry the team's identity; the letters use ink rather
+        // than the team colour. Crest colours come from the feed and include
+        // yellows and pale golds that fall under 2:1 on white, so tinting the
+        // text would make some badges unreadable and there is no way to know
+        // which in advance. The tint is stronger than the dark theme's
+        // because a 15% wash is nearly invisible against white.
+        background: `${color}2e`,
+        border: small ? "none" : `1px solid ${color}66`,
+        color: "var(--color-ink)",
       }}
     >
       {short.slice(0, small ? 2 : 3)}
