@@ -1,5 +1,6 @@
 import type { Match, MarketBook, OverUnderLine } from '@/lib/domain-types'
 import { deriveMarketBook, mergeMarketBook } from '@/lib/markets'
+import { liveOddsForScore } from '@/lib/match-betting'
 
 /**
  * Upstream: API-Football v3 (https://www.api-football.com).
@@ -412,10 +413,40 @@ function statusToClock(status: FixtureStatus): {
   return { minute: undefined, isLive: false }
 }
 
-function toMatch(fixture: Fixture, oddsRows: OddsRow[]): Match {
+function toMatch(
+  fixture: Fixture,
+  oddsRows: OddsRow[],
+  hasLiveOdds: boolean,
+): Match {
   const odds = averageOdds(oddsRows)
   const { minute, isLive } = statusToClock(fixture.fixture.status)
   const start = new Date(fixture.fixture.date)
+
+  const homeScore =
+    typeof fixture.goals.home === 'number' ? fixture.goals.home : undefined
+  const awayScore =
+    typeof fixture.goals.away === 'number' ? fixture.goals.away : undefined
+
+  // Once a goal goes in, the price has to move — a board still showing the
+  // pre-match price on a team that is 2-0 up is both wrong and exploitable.
+  //
+  // When the provider gives us a live book we use it verbatim: a real
+  // bookmaker's in-play price beats any model of ours. But /odds/live only
+  // covers a subset of fixtures, and everything else was keeping its frozen
+  // pre-match price for the full 90 minutes. Those fall back to the same
+  // score-and-minute drift the admin-created matches already use, so every
+  // live match on the board responds to the scoreline rather than only some.
+  const synthesiseLive =
+    isLive && !hasLiveOdds && homeScore !== undefined && awayScore !== undefined
+
+  const matchWinner = synthesiseLive
+    ? liveOddsForScore(
+        odds.matchWinner,
+        homeScore,
+        awayScore,
+        fixture.fixture.status.elapsed ?? 0,
+      )
+    : odds.matchWinner
 
   const base: Match = {
     id: String(fixture.fixture.id),
@@ -429,11 +460,11 @@ function toMatch(fixture: Fixture, oddsRows: OddsRow[]): Match {
       : start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
     startTimeISO: fixture.fixture.date,
     minute,
-    odds: odds.matchWinner,
+    odds: matchWinner,
     sport: 'football',
   }
-  if (typeof fixture.goals.home === 'number') base.homeScore = fixture.goals.home
-  if (typeof fixture.goals.away === 'number') base.awayScore = fixture.goals.away
+  if (homeScore !== undefined) base.homeScore = homeScore
+  if (awayScore !== undefined) base.awayScore = awayScore
   if (fixture.teams.home.logo) base.homeFlagUrl = fixture.teams.home.logo
   if (fixture.teams.away.logo) base.awayFlagUrl = fixture.teams.away.logo
   if (fixture.league.flag) base.countryFlagUrl = fixture.league.flag
@@ -441,9 +472,17 @@ function toMatch(fixture: Fixture, oddsRows: OddsRow[]): Match {
   const derived = deriveMarketBook(base)
   if (derived) {
     const partial: Partial<MarketBook> = {}
-    if (odds.overUnder.length > 0) partial.overUnder = odds.overUnder
-    if (odds.btts) partial.btts = odds.btts
-    if (odds.doubleChance) partial.doubleChance = odds.doubleChance
+    // Only overlay the provider's other markets when they are as fresh as the
+    // 1X2 they sit beside. If we just synthesised the 1X2 from the score, then
+    // these came from the same stale pre-match book, and overlaying them would
+    // put a moved match-winner price next to an unmoved double-chance one —
+    // arbitrage against ourselves. Letting the derived values stand keeps the
+    // whole card internally consistent.
+    if (!synthesiseLive) {
+      if (odds.overUnder.length > 0) partial.overUnder = odds.overUnder
+      if (odds.btts) partial.btts = odds.btts
+      if (odds.doubleChance) partial.doubleChance = odds.doubleChance
+    }
     base.markets = mergeMarketBook(derived, partial)
   }
 
@@ -513,10 +552,20 @@ export async function getMatchesForSport(sport: string): Promise<Match[]> {
   }
   // Live odds replace pre-match: once a game kicks off the pre-match book
   // disappears upstream anyway, and live prices are fresher.
-  for (const row of liveOdds) oddsMap.set(row.fixture.id, [row])
+  const liveOddsFixtureIds = new Set<number>()
+  for (const row of liveOdds) {
+    oddsMap.set(row.fixture.id, [row])
+    liveOddsFixtureIds.add(row.fixture.id)
+  }
 
   return fixtures
-    .map((f) => toMatch(f, oddsMap.get(f.fixture.id) ?? []))
+    .map((f) =>
+      toMatch(
+        f,
+        oddsMap.get(f.fixture.id) ?? [],
+        liveOddsFixtureIds.has(f.fixture.id),
+      ),
+    )
     .filter((m) => m.odds.home > 0 && m.odds.away > 0)
     .sort((a, b) => {
       if (a.isLive !== b.isLive) return a.isLive ? -1 : 1
