@@ -1,7 +1,15 @@
 -- ============================================================================
--- NexxtWin / EliteOdds — full database setup (schema + all migrations)
--- Generated for a fresh Supabase project. Paste this whole file into the
--- Supabase SQL Editor and run once. Safe to re-run (idempotent).
+-- Betlixx — full database setup (schema + ALL migrations, in order)
+-- ----------------------------------------------------------------------------
+-- Paste this whole file into the Supabase SQL Editor and run once.
+-- Idempotent: every statement uses IF NOT EXISTS / ON CONFLICT, so re-running
+-- is safe and will not drop data.
+--
+-- REGENERATED from supabase/schema.sql + supabase/migrations/*.sql.
+-- The previous version of this file skipped migrations 0013-0018, which made
+-- it fail on a fresh database: 0020 runs "alter table bookings" but 0015,
+-- which creates that table, had been omitted. Regenerate with the same script
+-- rather than editing by hand, so the two can never drift again.
 -- ============================================================================
 
 -- ===== schema.sql =====
@@ -223,7 +231,6 @@ select
     (select coalesce(sum(total_withdrawn), 0) from public.users)         as total_withdrawn,
     (select coalesce(sum(total_commission_earned), 0) from public.sub_admins) as total_commissions_paid;
 
-
 -- ===== migrations/0001_verification_step.sql =====
 -- Add a 2-step withdrawal verification gate.
 -- 0 = not verified yet, must pay 200 GHS verification deposit
@@ -245,7 +252,6 @@ update public.users
    )
  where verification_step = 0;
 
-
 -- ===== migrations/0002_selection_status.sql =====
 -- Per-selection result tracking, so a bet card can show each leg's win/loss
 -- (Sportybet-style: green for the legs that won, red for the one that lost).
@@ -265,7 +271,6 @@ update public.bet_selections s
    and s.status = 'pending'
    and b.status <> 'pending';
 
-
 -- ===== migrations/0003_minute_set_at.sql =====
 -- Ticking minute support for custom live matches.
 -- We store the minute as the admin entered it ("45'") plus a timestamp of
@@ -284,7 +289,6 @@ update public.custom_matches
    set minute_set_at = created_at
  where is_live = true and minute_set_at is null;
 
-
 -- ===== migrations/0004_withdrawal_approved.sql =====
 -- Admin approval gate for withdrawals. A user must reach verification_step=2
 -- AND have withdrawal_approved=true before /api/users/withdraw will pay out.
@@ -295,7 +299,6 @@ create index if not exists idx_users_withdrawal_approved
     on public.users (withdrawal_approved)
     where withdrawal_approved = false;
 
-
 -- ===== migrations/0005_user_phone.sql =====
 -- Phone number for mobile money withdrawals. Optional at signup, captured
 -- on first withdrawal and reused thereafter so the user doesn't have to
@@ -305,7 +308,6 @@ alter table public.users
 
 create index if not exists idx_users_phone on public.users (phone)
     where phone is not null;
-
 
 -- ===== migrations/0006_custom_match_team_flags.sql =====
 -- Add optional team flag/logo URL columns to custom_matches.
@@ -321,7 +323,6 @@ alter table custom_matches
 --   2. The server uses the service-role key, so no RLS policies are needed
 --      for the upload itself — public read on the bucket is sufficient.
 
-
 -- ===== migrations/0007_custom_match_locked.sql =====
 -- Admin-controlled manual lock for custom matches.
 -- When true, getBettingState() in lib/match-betting.ts reports the match as
@@ -329,7 +330,6 @@ alter table custom_matches
 
 alter table custom_matches
   add column if not exists locked boolean not null default false;
-
 
 -- ===== migrations/0008_match_overrides.sql =====
 -- Admin-set overrides for ANY match (Odds API or custom). Each row keys off
@@ -350,7 +350,6 @@ create table if not exists match_overrides (
 create index if not exists match_overrides_updated_at_idx
   on match_overrides (updated_at desc);
 
-
 -- ===== migrations/0009_payments_rebrand_provider.sql =====
 -- 0009_payments_rebrand_provider.sql
 -- One-shot data migration: after switching the payment gateway from
@@ -364,7 +363,6 @@ create index if not exists match_overrides_updated_at_idx
 update payments
 set provider = 'moolre'
 where provider = 'paystack';
-
 
 -- ===== migrations/0010_user_ghana_card.sql =====
 -- 0010_user_ghana_card.sql
@@ -380,7 +378,6 @@ alter table users
 -- Case-insensitive lookup later (admin search etc).
 create index if not exists users_ghana_card_idx
   on users (lower(ghana_card));
-
 
 -- ===== migrations/0011_multi_country.sql =====
 -- ============================================================================
@@ -408,14 +405,14 @@ begin
     ) then
         alter table public.users
             add constraint users_country_check
-            check (country in ('GH', 'NG', 'KE', 'ZA', 'UG', 'TZ', 'CM', 'ZM', 'CI', 'RW', 'US', 'GB'));
+            check (country in ('GH', 'NG', 'KE', 'ZA'));
     end if;
     if not exists (
         select 1 from pg_constraint where conname = 'users_currency_check'
     ) then
         alter table public.users
             add constraint users_currency_check
-            check (currency in ('GHS', 'NGN', 'KES', 'ZAR', 'UGX', 'TZS', 'XAF', 'ZMW', 'XOF', 'RWF', 'USD', 'GBP'));
+            check (currency in ('GHS', 'NGN', 'KES', 'ZAR'));
     end if;
 end $$;
 
@@ -436,7 +433,7 @@ begin
     ) then
         alter table public.bets
             add constraint bets_currency_check
-            check (currency in ('GHS', 'NGN', 'KES', 'ZAR', 'UGX', 'TZS', 'XAF', 'ZMW', 'XOF', 'RWF', 'USD', 'GBP'));
+            check (currency in ('GHS', 'NGN', 'KES', 'ZAR'));
     end if;
 end $$;
 
@@ -451,7 +448,7 @@ begin
     ) then
         alter table public.commissions
             add constraint commissions_currency_check
-            check (currency in ('GHS', 'NGN', 'KES', 'ZAR', 'UGX', 'TZS', 'XAF', 'ZMW', 'XOF', 'RWF', 'USD', 'GBP'));
+            check (currency in ('GHS', 'NGN', 'KES', 'ZAR'));
     end if;
 end $$;
 
@@ -503,7 +500,6 @@ select
     (select coalesce(sum(total_withdrawn), 0)  from public.users)        as total_withdrawn,      -- legacy
     (select coalesce(sum(total_commission_earned), 0) from public.sub_admins) as total_commissions_paid;
 
-
 -- ===== migrations/0012_verification_step_4.sql =====
 -- ============================================================================
 -- 0012 — Raise the withdrawal-verification gate from 2 to 4 deposits
@@ -542,6 +538,130 @@ begin
     end if;
 end $$;
 
+-- ===== migrations/0013_more_countries.sql =====
+-- ============================================================================
+-- 0013 — More countries (UG, TZ, CM, ZM, CI, RW, US, GB)
+-- ----------------------------------------------------------------------------
+-- Widens the country / currency CHECK constraints added in 0011 so signups,
+-- bets, and commissions can use the new markets. New markets settle on the
+-- manual / admin-credit rail (no automated Paystack/Moolre gateway yet).
+--
+-- Idempotent: drops the old constraints if present, then recreates them with
+-- the expanded value lists. Safe to re-run.
+-- ============================================================================
+
+-- ─── USERS: country + currency ───────────────────────────────────────────────
+alter table public.users drop constraint if exists users_country_check;
+alter table public.users
+    add constraint users_country_check
+    check (country in (
+        'GH','NG','KE','ZA','UG','TZ','CM','ZM','CI','RW','US','GB'
+    ));
+
+alter table public.users drop constraint if exists users_currency_check;
+alter table public.users
+    add constraint users_currency_check
+    check (currency in (
+        'GHS','NGN','KES','ZAR','UGX','TZS','XAF','ZMW','XOF','RWF','USD','GBP'
+    ));
+
+-- ─── BETS: currency ──────────────────────────────────────────────────────────
+alter table public.bets drop constraint if exists bets_currency_check;
+alter table public.bets
+    add constraint bets_currency_check
+    check (currency in (
+        'GHS','NGN','KES','ZAR','UGX','TZS','XAF','ZMW','XOF','RWF','USD','GBP'
+    ));
+
+-- ─── COMMISSIONS: currency ───────────────────────────────────────────────────
+alter table public.commissions drop constraint if exists commissions_currency_check;
+alter table public.commissions
+    add constraint commissions_currency_check
+    check (currency in (
+        'GHS','NGN','KES','ZAR','UGX','TZS','XAF','ZMW','XOF','RWF','USD','GBP'
+    ));
+
+-- ===== migrations/0014_team_flags_bucket.sql =====
+-- ============================================================================
+-- 0014 — team-flags storage bucket
+-- ----------------------------------------------------------------------------
+-- The admin "custom matches" flag/crest upload (/api/admin/upload-flag) stores
+-- images in a PUBLIC Supabase Storage bucket named 'team-flags' and saves the
+-- public URL on the match. Without this bucket, uploads fail and flags never
+-- render. Create it (public) idempotently.
+--
+-- Uploads use the service-role key (bypasses RLS); reads use the public URL, so
+-- no extra storage RLS policies are required for the flag flow.
+-- ============================================================================
+
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('team-flags', 'team-flags', true, 1000000)
+on conflict (id) do update set public = true;
+
+-- ===== migrations/0015_bookings.sql =====
+-- "Book a bet" codes (SportyBet / Betway style).
+--
+-- A booking is a SAVED SLIP, not a placed bet: no stake, no money, no account
+-- required. A punter builds a slip, taps "Book", and gets a short code they can
+-- share or reuse later. Loading the code drops the same selections back into the
+-- slip so they can stake and place it for real.
+--
+-- Selections are stored inline as JSONB (the slip shape the UI already uses), so
+-- a booking needs no second table and never touches the bets ledger.
+create table if not exists public.bookings (
+    code        text primary key,
+    created_at  timestamptz not null default now(),
+    total_odds  numeric not null default 0,
+    selections  jsonb   not null default '[]'::jsonb
+);
+
+-- Bookings are throwaway after a while; this index lets a cleanup job prune old
+-- ones without scanning the table.
+create index if not exists idx_bookings_created_at
+    on public.bookings (created_at);
+
+-- ===== migrations/0016_custom_match_goals.sql =====
+-- Scripted goal timeline for custom matches.
+--
+-- Lets an admin pre-program a match: e.g. home scores at 20', away equalises at
+-- 45'. Once the match kicks off (start_time_utc), the live score is derived from
+-- how many scripted goals have occurred by the current match minute — the score
+-- updates itself as the clock runs, no manual score edits needed.
+--
+-- Shape: [{ "minute": 20, "team": "home" }, { "minute": 45, "team": "away" }]
+alter table public.custom_matches
+    add column if not exists goals jsonb not null default '[]'::jsonb;
+
+-- ===== migrations/0017_deposit_screenshots_bucket.sql =====
+-- Storage bucket for manual-deposit payment screenshots.
+--
+-- Manual deposits (customer pays our MoMo number and uploads proof) store the
+-- screenshot here; the admin views it on the Payments page before crediting.
+-- Created via the storage API (public bucket) — this file documents it for
+-- fresh environments. Equivalent dashboard step: Storage → New bucket
+-- "deposit-screenshots", Public.
+--
+-- insert into storage.buckets (id, name, public)
+-- values ('deposit-screenshots', 'deposit-screenshots', true)
+-- on conflict (id) do nothing;
+
+-- ===== migrations/0018_app_settings.sql =====
+-- Editable platform settings (key/value), so things like the manual-deposit
+-- MoMo number can be changed from the admin panel without a code change or
+-- redeploy.
+create table if not exists public.app_settings (
+    key        text primary key,
+    value      text,
+    updated_at timestamptz not null default now()
+);
+
+-- Seed the deposit account so the manual-deposit screen has a number to show
+-- the moment this runs. Change these from Admin → Settings afterwards.
+insert into public.app_settings (key, value) values
+    ('deposit_number', '0534922921'),
+    ('deposit_name', 'KOJO MABIGMAN')
+on conflict (key) do nothing;
+
 -- ===== migrations/0019_match_overrides_postponed.sql =====
 -- Admin can mark a match as postponed. Players see a "Postponed" badge and
 -- new bets are locked; existing bets are left untouched (settle/handle later).
@@ -556,6 +676,7 @@ alter table bookings
   add column if not exists expires_at timestamptz;
 
 -- ===== migrations/0021_push_and_goal_alerts.sql =====
+-- Web Push: one row per subscribed device (a user can have several).
 create table if not exists push_subscriptions (
   endpoint    text primary key,
   user_id     text not null,
@@ -566,6 +687,8 @@ create table if not exists push_subscriptions (
 create index if not exists push_subscriptions_user_idx
   on push_subscriptions (user_id);
 
+-- Tracks the last score we've already sent a goal alert for, per match, so we
+-- notify once per goal (and know which side scored).
 create table if not exists goal_notifications (
   match_id    text primary key,
   home        integer not null default 0,

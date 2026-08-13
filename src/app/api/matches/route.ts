@@ -123,11 +123,26 @@ export async function GET(request: Request) {
 
   // Hide finished custom matches from the public feed — both ones the admin
   // finalised (minute 'FT') and ones whose auto-clock has run past full time.
-  const allCustom = await readCustomMatchesForSport(sport)
-  const customMatches = hydrateAll(
-    allCustom.filter((m) => !isFinished(m)),
-    overrides,
-  )
+  //
+  // Guarded like readMatchOverridesMap above. Custom matches come from
+  // Supabase, and supabaseServer() throws outright when its env vars are
+  // missing. Unguarded, that throw escaped the handler and returned a bare
+  // 500, so a Supabase problem blanked the ENTIRE feed — including the
+  // upstream odds-API fixtures, which need no database at all. The public
+  // listing should degrade to "no admin-created matches", not to no matches.
+  let customMatches: Match[] = []
+  let customError: string | undefined
+  try {
+    const allCustom = await readCustomMatchesForSport(sport)
+    customMatches = hydrateAll(
+      allCustom.filter((m) => !isFinished(m)),
+      overrides,
+    )
+  } catch (err) {
+    customError = err instanceof Error ? err.message : String(err)
+    console.error('[matches] custom matches unavailable (feed continues):', customError)
+  }
+
   const maybeFilter = (list: Match[]) => (todayOnly ? filterToday(list, tzOffset) : list)
 
   try {
@@ -139,6 +154,7 @@ export async function GET(request: Request) {
       reason: apiMatches.length === 0 ? 'no upcoming events from provider' : undefined,
       matches: maybeFilter([...customMatches, ...hydrateAll(liveOrUpcomingApi, overrides)]),
       customCount: customMatches.length,
+      customError,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -147,6 +163,7 @@ export async function GET(request: Request) {
       reason: message,
       matches: maybeFilter(customMatches),
       customCount: customMatches.length,
+      customError,
     })
   }
 }
