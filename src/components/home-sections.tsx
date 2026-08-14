@@ -19,48 +19,83 @@ import { TeamBadge, CountryFlag } from "./brand";
 import { LiveClock } from "./live-clock";
 
 /**
- * Hero banner — the headline offer, with the primary journeys beside it.
+ * Hero banner — the headline offer, the journeys it drives, and match imagery.
  *
- * The reference layout pairs this with a large character illustration. There
- * is no such art in this project, and a stretched stock image would look
- * worse than none, so the space goes to the offer and the actions instead.
- * Exactly ONE solid accent button here: "Create account" is the action this
- * banner exists to drive, and giving all three equal weight would mean none
- * of them reads as the next step.
+ * Two columns from lg, stacked below. The photo sits in its OWN panel beside
+ * the copy rather than behind it: the text is dark ink on a light page, and a
+ * night-stadium shot underneath it would need a heavy scrim to stay legible,
+ * which is exactly the murky look this light theme exists to avoid. Beside it,
+ * the picture can stay full-strength and the words stay at full contrast.
+ *
+ * Exactly ONE solid accent button: "Create account" is what this banner exists
+ * to drive, and giving all three equal weight would mean none reads as next.
+ *
+ * Image: Unsplash (photo-1629217855633-79a6925d6c47), Unsplash License —
+ * free for commercial use, no attribution required. Kept as a local asset
+ * rather than hotlinked so the hero cannot break when a CDN URL rots, and
+ * pre-sized to two widths so phones don't pull the desktop file.
  */
 export function HeroPromo() {
   const offer = promos[0];
   return (
-    <section className="hero p-4 sm:p-5">
-      <p className="text-[11px] font-semibold text-[var(--color-accent)]">
-        {offer.eyebrow}
-      </p>
-      <h1 className="font-display font-extrabold text-[22px] sm:text-[28px] leading-[1.1] tracking-tight mt-1.5 max-w-[22ch]">
-        {offer.title}
-      </h1>
-      <p className="text-[12.5px] text-[var(--color-ink-dim)] mt-1.5 max-w-[42ch]">
-        {offer.sub}
-      </p>
+    <section className="hero grid lg:grid-cols-[1.05fr_0.95fr] gap-4 lg:gap-5 p-4 sm:p-5">
+      <div className="flex flex-col justify-center min-w-0">
+        <p className="text-[11px] font-semibold text-[var(--color-accent)]">
+          {offer.eyebrow}
+        </p>
+        <h1 className="font-display font-extrabold text-[24px] sm:text-[30px] lg:text-[34px] leading-[1.08] tracking-tight mt-1.5 text-balance">
+          {offer.title}
+        </h1>
+        <p className="text-[13px] text-[var(--color-ink-dim)] mt-2 max-w-[44ch]">
+          {offer.sub}
+        </p>
 
-      <div className="flex flex-wrap gap-2 mt-4">
-        <Link
-          href="/register"
-          className="btn-primary flex items-center gap-1.5 rounded-[var(--radius-ctl)] px-4 py-2.5 font-display font-bold text-[13px]"
-        >
-          <UserPlus size={14} /> Create account
-        </Link>
-        <Link
-          href="/account"
-          className="flex items-center gap-1.5 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2.5 font-display font-semibold text-[13px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
-        >
-          <Gift size={14} /> View bonuses
-        </Link>
-        <Link
-          href="/account"
-          className="flex items-center gap-1.5 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2.5 font-display font-semibold text-[13px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
-        >
-          <Wallet size={14} /> Deposit
-        </Link>
+        {/* Primary on its own row so it never ends up sharing a line with a
+            secondary, or worse, wrapping alone underneath one. */}
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-2">
+          <Link
+            href="/register"
+            className="btn-primary flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] px-5 py-3 font-display font-bold text-[13.5px]"
+          >
+            <UserPlus size={15} /> Create account
+          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/account"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3 font-display font-semibold text-[13px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
+            >
+              <Gift size={14} /> Bonuses
+            </Link>
+            <Link
+              href="/account"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-[var(--radius-ctl)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3 font-display font-semibold text-[13px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition-colors"
+            >
+              <Wallet size={14} /> Deposit
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative rounded-[var(--radius-card)] overflow-hidden border border-[var(--color-line)] aspect-[16/9] lg:aspect-auto lg:min-h-[196px]">
+        {/* Plain <img> with a srcset rather than next/image: the asset is
+            already pre-sized at build time, so the optimiser would only add a
+            per-request cost for an identical result.
+            eager + high priority because this is the largest element above the
+            fold — it is the LCP candidate, and lazy-loading it would delay the
+            very metric it defines. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero-stadium-1040.webp"
+          srcSet="/hero-stadium-640.webp 640w, /hero-stadium-1040.webp 1040w"
+          sizes="(min-width: 1024px) 46vw, 100vw"
+          alt=""
+          aria-hidden="true"
+          loading="eager"
+          fetchPriority="high"
+          width={1040}
+          height={694}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
       </div>
     </section>
   );
