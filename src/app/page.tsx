@@ -10,7 +10,9 @@ import {
   FeaturedMatch,
 } from "@/components/home-sections";
 import { MatchRail } from "@/components/match-rail";
+import { MarketTabs } from "@/components/market-tabs";
 import { WinnersTicker } from "@/components/winners-ticker";
+import type { MarketKey } from "@/lib/types";
 import { competitions } from "@/lib/data";
 import { useMatches } from "@/lib/use-matches";
 
@@ -45,6 +47,7 @@ function ListSkeleton() {
 
 export default function Home() {
   const [filter, setFilter] = useState("All");
+  const [market, setMarket] = useState<MarketKey>("1x2");
   const { live, today, tomorrow, week, loading } = useMatches();
   const featured = live[0] ?? today[0] ?? week[0];
 
@@ -87,6 +90,10 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Which market the odds columns price. Applies to every list below at
+          once, so a whole day's fixtures can be read on Over 2.5 or GG/NG. */}
+      <MarketTabs value={market} onChange={setMarket} />
+
       {loading ? (
         <ListSkeleton />
       ) : (
@@ -97,20 +104,24 @@ export default function Home() {
             href="/live"
             accent="var(--color-loss)"
           />
-          <FixtureList matches={live} empty="No live matches right now." />
+          <FixtureList matches={live}
+            market={market} empty="No live matches right now." />
 
           <SectionHead title="Today" more={`${today.length} matches`} />
-          <FixtureList matches={today} empty="No more matches today." />
+          <FixtureList matches={today}
+            market={market} empty="No more matches today." />
 
           <SectionHead title="Tomorrow" more={`${tomorrow.length} matches`} />
           <FixtureList
             matches={tomorrow}
+            market={market}
             empty="No fixtures listed for tomorrow yet."
           />
 
           <SectionHead title="This Week" more={`${week.length} matches`} />
           <FixtureList
             matches={week}
+            market={market}
             empty="No upcoming fixtures this week yet."
           />
         </>

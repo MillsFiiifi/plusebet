@@ -384,8 +384,14 @@ img, svg { user-select: none; -webkit-user-drag: none; }
 
 .fixture-row {
   display: grid;
-  /* time | teams | 3 odds | markets */
-  grid-template-columns: 46px minmax(0, 1fr) repeat(3, 58px) 44px;
+  /* time | teams | odds | markets
+     The odds tracks come from --odds-track, set per league group, because the
+     selected market decides how many there are: 1X2 and double chance have
+     three outcomes, over/under and GG/NG two. It is substituted as a whole
+     track list rather than a count, since CSS repeat() requires a literal
+     integer and will not accept a custom property. */
+  grid-template-columns:
+    46px minmax(0, 1fr) var(--odds-track, 58px 58px 58px) 44px;
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
@@ -401,7 +407,8 @@ img, svg { user-select: none; -webkit-user-drag: none; }
    layered `hidden` utility and the header would leak onto mobile. */
 .fixture-head {
   display: none;
-  grid-template-columns: 46px minmax(0, 1fr) repeat(3, 58px) 44px;
+  grid-template-columns:
+    46px minmax(0, 1fr) var(--odds-track, 58px 58px 58px) 44px;
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
@@ -426,7 +433,15 @@ img, svg { user-select: none; -webkit-user-drag: none; }
   .fixture-row > .fx-time { grid-area: time; }
   .fixture-row > .fx-teams { grid-area: teams; }
   .fixture-row > .fx-more { grid-area: more; }
-  .fixture-row > .fx-odds { grid-area: odds; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  /* auto-flow column rather than a fixed count, so two- and three-outcome
+     markets both fill the width without needing the track variable here. */
+  .fixture-row > .fx-odds {
+    grid-area: odds;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 6px;
+  }
 }
 @media (min-width: 640px) {
   .fixture-row > .fx-odds { display: contents; }

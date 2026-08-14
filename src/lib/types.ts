@@ -10,6 +10,27 @@ export type Market = {
   odds: number;
 };
 
+/** Markets offerable straight from a fixture row, via the selector above the list. */
+export type MarketKey = "1x2" | "dc" | "ou25" | "btts";
+
+export type MarketPick = {
+  /** Stable id fragment. Combined with match id + market key to key a selection. */
+  key: string; // "1" | "X" | "2" | "1X" | "O2.5" | "GG" …
+  /** Column text on the button. */
+  label: string;
+  /** Human-readable pick for the bet slip, e.g. "Arsenal or Draw". */
+  pick: string;
+  odds: number;
+};
+
+/**
+ * Per-match prices for each selectable market. Partial on purpose: the feed
+ * does not quote every market on every fixture, and a row must still render
+ * (with the cells disabled) when the chosen market is missing, or the columns
+ * would stop lining up down the page.
+ */
+export type MarketBoard = Partial<Record<MarketKey, MarketPick[]>>;
+
 export type Match = {
   id: string;
   league: string;
@@ -33,6 +54,8 @@ export type Match = {
   scoreHome?: number;
   scoreAway?: number;
   markets: Market[]; // 1 X 2
+  /** Prices for every market the row selector can show. See MarketBoard. */
+  board?: MarketBoard;
   marketCount: number;
   featured?: boolean;
   locked?: boolean; // betting closed (match started / live / admin-locked)

@@ -3,37 +3,61 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronRight, ChevronDown, Lock } from "lucide-react";
-import type { Match } from "@/lib/types";
+import type { Match, MarketKey, MarketPick } from "@/lib/types";
 import { useSlip } from "@/lib/store";
 import { TeamBadge, CountryFlag } from "./brand";
 import { LiveClock } from "./live-clock";
 import { cn } from "@/lib/utils";
+import { marketTab, oddsTrack } from "@/lib/markets-ui";
 
-const PICK_LABEL: Record<string, (m: Match) => string> = {
-  "1": (m) => m.home,
-  X: () => "Draw",
-  "2": (m) => m.away,
-};
+/**
+ * Picks for the selected market, falling back to the 1X2 the row has always
+ * carried. Returns null when the feed hasn't priced that market for this
+ * fixture, which the row renders as disabled placeholders rather than hiding —
+ * a row that vanished on market switch would break the column alignment that
+ * makes the list scannable in the first place.
+ */
+function picksFor(m: Match, market: MarketKey): MarketPick[] | null {
+  const board = m.board?.[market];
+  if (board && board.length > 0) return board;
+  if (market === "1x2") {
+    return m.markets.map((mk) => ({
+      key: mk.label,
+      label: mk.label,
+      pick: mk.label === "1" ? m.home : mk.label === "2" ? m.away : "Draw",
+      odds: mk.odds,
+    }));
+  }
+  return null;
+}
 
 /* ------------------------------------------------------------------
  One odds cell. Quiet at rest, solid accent when selected — the
  selected state is intentionally the loudest thing on the page.
  ------------------------------------------------------------------ */
-function OddsCell({ m, idx }: { m: Match; idx: number }) {
-  const mk = m.markets[idx];
-  const id = `${m.id}-1x2-${mk.label}`;
+function OddsCell({
+  m,
+  market,
+  p,
+}: {
+  m: Match;
+  market: MarketKey;
+  p: MarketPick;
+}) {
+  // Market key is part of the id, so the same match can hold one selection per
+  // market and switching tabs doesn't silently overwrite an existing pick.
+  const id = `${m.id}-${market}-${p.key}`;
   const has = useSlip((s) => s.selections.some((x) => x.id === id));
   const toggle = useSlip((s) => s.toggle);
   const locked = m.locked;
-
-  const pick = PICK_LABEL[mk.label](m);
+  const slipLabel = marketTab(market).slipLabel;
 
   return (
     <button
       data-active={has}
       disabled={locked}
       aria-pressed={has}
-      aria-label={`${pick} at ${mk.odds.toFixed(2)}`}
+      aria-label={`${p.pick} at ${p.odds.toFixed(2)}`}
       onClick={(e) => {
         e.preventDefault();
         if (locked) return;
@@ -41,18 +65,33 @@ function OddsCell({ m, idx }: { m: Match; idx: number }) {
           id,
           matchId: m.id,
           match: `${m.home} v ${m.away}`,
-          market: "Match Result",
-          pick,
-          odds: mk.odds,
+          market: slipLabel,
+          pick: p.pick,
+          odds: p.odds,
         });
       }}
       className="odds-btn flex flex-col items-center justify-center leading-none disabled:opacity-35 disabled:cursor-not-allowed"
     >
       <span className="text-[9.5px] font-semibold text-[var(--color-ink-faint)] mb-0.5">
-        {mk.label}
+        {p.label}
       </span>
-      <span className="text-[13px]">{mk.odds.toFixed(2)}</span>
+      <span className="text-[13px]">{p.odds.toFixed(2)}</span>
     </button>
+  );
+}
+
+/** Placeholder for a market this fixture isn't priced on. Never clickable. */
+function OddsCellEmpty({ label }: { label: string }) {
+  return (
+    <span
+      className="odds-btn flex flex-col items-center justify-center leading-none opacity-35 cursor-not-allowed"
+      aria-label={`${label} not available`}
+    >
+      <span className="text-[9.5px] font-semibold text-[var(--color-ink-faint)] mb-0.5">
+        {label}
+      </span>
+      <span className="text-[13px]">—</span>
+    </span>
   );
 }
 
@@ -61,7 +100,15 @@ function OddsCell({ m, idx }: { m: Match; idx: number }) {
  odds columns line up down the entire page — that alignment is what
  makes a long list scannable rather than just small.
  ------------------------------------------------------------------ */
-export function FixtureRow({ m }: { m: Match }) {
+export function FixtureRow({
+  m,
+  market = "1x2",
+}: {
+  m: Match;
+  market?: MarketKey;
+}) {
+  const tab = marketTab(market);
+  const picks = picksFor(m, market);
   return (
     <div className="fixture-row">
       {/* time / live minute */}
@@ -131,11 +178,13 @@ export function FixtureRow({ m }: { m: Match }) {
         )}
       </Link>
 
-      {/* 1 X 2 — `display: contents` on sm+ so these sit in the shared grid */}
+      {/* Odds — `display: contents` on sm+ so these sit in the shared grid */}
       <div className="fx-odds">
-        <OddsCell m={m} idx={0} />
-        <OddsCell m={m} idx={1} />
-        <OddsCell m={m} idx={2} />
+        {picks
+          ? picks.map((p) => (
+              <OddsCell key={p.key} m={m} market={market} p={p} />
+            ))
+          : tab.headers.map((h) => <OddsCellEmpty key={h} label={h} />)}
       </div>
 
       {/* extra markets */}
@@ -159,19 +208,32 @@ export function LeagueGroup({
   flag,
   flagUrl,
   matches,
+  market = "1x2",
   defaultOpen = true,
 }: {
   league: string;
   flag: string;
   flagUrl?: string;
   matches: Match[];
+  market?: MarketKey;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const liveCount = matches.filter((m) => m.live).length;
+  const tab = marketTab(market);
 
   return (
-    <div className="card overflow-hidden">
+    // --odds-track is set here and inherited by every row and the column key
+    // below, so a two-outcome market widens its columns instead of leaving a
+    // gap where the third used to be.
+    <div
+      className="card overflow-hidden"
+      style={
+        {
+          "--odds-track": oddsTrack(tab.headers.length),
+        } as React.CSSProperties
+      }
+    >
       <button
         onClick={() => setOpen((v) => !v)}
         className="league-head"
@@ -206,7 +268,7 @@ export function LeagueGroup({
             <span className="text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)] font-semibold">
               Match
             </span>
-            {["1", "X", "2"].map((l) => (
+            {tab.headers.map((l) => (
               <span
                 key={l}
                 className="text-[9.5px] text-center text-[var(--color-ink-faint)] font-semibold"
@@ -217,7 +279,7 @@ export function LeagueGroup({
             <span />
           </div>
           {matches.map((m) => (
-            <FixtureRow key={m.id} m={m} />
+            <FixtureRow key={m.id} m={m} market={market} />
           ))}
         </>
       )}
@@ -231,9 +293,11 @@ export function LeagueGroup({
 export function FixtureList({
   matches,
   empty,
+  market = "1x2",
 }: {
   matches: Match[];
   empty: string;
+  market?: MarketKey;
 }) {
   if (matches.length === 0) {
     return (
@@ -274,6 +338,7 @@ export function FixtureList({
           flag={g.flag}
           flagUrl={g.flagUrl}
           matches={g.matches}
+          market={market}
         />
       ))}
     </div>

@@ -5,7 +5,7 @@
 // is pure mapping — no fetching.
 
 import type { Match as ApiMatch, MarketBook } from '@/lib/domain-types'
-import type { Match as UiMatch, Market } from '@/lib/types'
+import type { Match as UiMatch, Market, MarketBoard } from '@/lib/types'
 import { getCountryFlag } from '@/lib/country-flags'
 import { getBettingState, isLiveNow, liveMinuteFromKickoff, isHalfTime } from '@/lib/match-betting'
 
@@ -97,6 +97,62 @@ const ONE_X_TWO = (o: ApiMatch['odds']): Market[] => [
   { label: '2', odds: o.away },
 ]
 
+/** A price is only offerable if it's a real number above evens-with-no-margin. */
+function priced(n: number | undefined): n is number {
+  return typeof n === 'number' && Number.isFinite(n) && n > 1
+}
+
+/**
+ * Build the per-row market board.
+ *
+ * deriveMarketBook already computes double chance, over/under and BTTS
+ * server-side, but apiMatchToUi previously kept only the 1X2 columns, so the
+ * fixture list could never offer anything else without opening each match.
+ *
+ * Every market is optional and omitted rather than faked when the feed hasn't
+ * priced it — a fabricated price here would be a real liability, since these
+ * buttons stake money. The row renders disabled cells in that case.
+ */
+function buildBoard(api: ApiMatch): MarketBoard {
+  const board: MarketBoard = {
+    '1x2': [
+      { key: '1', label: '1', pick: api.homeTeam, odds: api.odds.home },
+      { key: 'X', label: 'X', pick: 'Draw', odds: api.odds.draw },
+      { key: '2', label: '2', pick: api.awayTeam, odds: api.odds.away },
+    ],
+  }
+
+  const dc = api.markets?.doubleChance
+  if (dc && priced(dc.homeOrDraw) && priced(dc.homeOrAway) && priced(dc.drawOrAway)) {
+    board.dc = [
+      { key: '1X', label: '1X', pick: `${api.homeTeam} or Draw`, odds: dc.homeOrDraw },
+      { key: '12', label: '12', pick: 'Home or Away', odds: dc.homeOrAway },
+      { key: 'X2', label: 'X2', pick: `${api.awayTeam} or Draw`, odds: dc.drawOrAway },
+    ]
+  }
+
+  // 2.5 specifically — it's the line the tab advertises, so falling back to
+  // whatever other line the feed happens to quote would silently price a
+  // different bet than the column header claims.
+  const ou = api.markets?.overUnder?.find((l) => l.line === 2.5)
+  if (ou && priced(ou.over) && priced(ou.under)) {
+    board.ou25 = [
+      { key: 'O2.5', label: 'Over', pick: 'Over 2.5', odds: ou.over },
+      { key: 'U2.5', label: 'Under', pick: 'Under 2.5', odds: ou.under },
+    ]
+  }
+
+  const btts = api.markets?.btts
+  if (btts && priced(btts.yes) && priced(btts.no)) {
+    board.btts = [
+      { key: 'GG', label: 'GG', pick: 'Both teams to score', odds: btts.yes },
+      { key: 'NG', label: 'NG', pick: 'Not both teams to score', odds: btts.no },
+    ]
+  }
+
+  return board
+}
+
 /**
  * Map a single API match to the UI shape consumed by MatchCard / detail page.
  * Prefers real crest URLs from the feed where available; otherwise falls back
@@ -134,6 +190,7 @@ export function apiMatchToUi(api: ApiMatch): UiMatch {
     scoreHome: api.homeScore,
     scoreAway: api.awayScore,
     markets: ONE_X_TWO(api.odds),
+    board: buildBoard(api),
     marketCount: countMarkets(api.markets),
     featured: false,
     locked: bet.closed,
