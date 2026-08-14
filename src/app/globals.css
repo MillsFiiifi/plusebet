@@ -448,6 +448,59 @@ img, svg { user-select: none; -webkit-user-drag: none; }
 }
 
 /* ============================================================
+   WIN CELEBRATION
+   The one screen in the product allowed to be theatrical. Everything
+   else here is deliberately restrained, but a settled winning ticket
+   is the moment the whole thing exists for.
+
+   The overshoot curve (0 -> 1.1 -> 0.94 -> 1.02 -> 1) is what makes it
+   read as a celebration rather than a dialog: a straight ease-in lands
+   flat, whereas overshooting and settling reads as something landing
+   with weight. Elements are staggered so the eye is led headline ->
+   amount -> trophy rather than being shown everything at once.
+   ============================================================ */
+@keyframes winPop {
+  0% { transform: scale(0); opacity: 0; }
+  40% { transform: scale(1.1); opacity: 1; }
+  60% { transform: scale(0.94); }
+  80% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes winFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes winRays {
+  to { transform: rotate(360deg); }
+}
+@keyframes winGlow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.06); }
+}
+
+.win-pop {
+  animation: winPop 0.76s cubic-bezier(0.36, -0.01, 0.42, 1.01) both;
+  transform-origin: center;
+}
+.win-fade { animation: winFade 0.4s ease-out both; }
+/* 18s per turn — fast enough to be alive, slow enough not to draw the eye
+   away from the number, which is the thing the player actually came for. */
+.win-rays { animation: winRays 18s linear infinite; }
+.win-glow { animation: winGlow 2.4s ease-in-out infinite; }
+
+/* The global reduced-motion rule collapses durations to ~0, which would leave
+   the pop-in mid-keyframe at scale(0) — i.e. invisible. These restore a plain
+   visible state instead of an animated one. */
+@media (prefers-reduced-motion: reduce) {
+  .win-pop, .win-fade {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+  .win-rays, .win-glow { animation: none !important; }
+}
+
+/* ============================================================
    HOME LAYOUT — hero, category tiles, horizontal rails
    ============================================================ */
 
