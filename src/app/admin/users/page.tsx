@@ -15,6 +15,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatMoney } from '@/lib/format-money'
+import {
+  DEFAULT_COUNTRY,
+  getWithdrawQualifyDeposits,
+  isCountryCode,
+} from '@/lib/countries'
 
 interface AdminUserRow {
   id: string
@@ -24,6 +29,7 @@ interface AdminUserRow {
   country?: string
   currency?: string
   verificationStep: 0 | 1 | 2 | 3 | 4
+  qualifyingDeposits?: number
   withdrawalApproved: boolean
   balance: number
   totalDeposited: number
@@ -33,6 +39,23 @@ interface AdminUserRow {
 }
 
 type Filter = 'all' | 'depositors' | 'awaiting' | 'approved' | 'unverified'
+
+/**
+ * Where a player stands against their country's deposit gate — the same rule
+ * /api/users/withdraw enforces, so this list never offers Approve to someone
+ * the withdrawal endpoint would still block (or hide it from someone it
+ * wouldn't). Normally that's 3 qualifying deposits; a market with the count
+ * gate switched off falls back to the 4-step verification counter.
+ */
+function gateProgress(u: AdminUserRow): { done: number; total: number; complete: boolean } {
+  const country = isCountryCode(u.country) ? u.country : DEFAULT_COUNTRY
+  const required = getWithdrawQualifyDeposits(country)
+  if (required > 0) {
+    const made = u.qualifyingDeposits ?? 0
+    return { done: Math.min(made, required), total: required, complete: made >= required }
+  }
+  return { done: u.verificationStep, total: 4, complete: u.verificationStep === 4 }
+}
 
 export default function AdminPlayersPage() {
   const [users, setUsers] = useState<AdminUserRow[]>([])
@@ -70,11 +93,11 @@ export default function AdminPlayersPage() {
       if (filter === 'depositors') {
         if (!u.firstDepositAt) return false
       } else if (filter === 'awaiting') {
-        if (!(u.verificationStep === 4 && !u.withdrawalApproved)) return false
+        if (!(gateProgress(u).complete && !u.withdrawalApproved)) return false
       } else if (filter === 'approved') {
         if (!u.withdrawalApproved) return false
       } else if (filter === 'unverified') {
-        if (u.verificationStep === 4) return false
+        if (gateProgress(u).complete) return false
       }
       if (q) {
         if (
@@ -94,10 +117,10 @@ export default function AdminPlayersPage() {
       all: users.length,
       depositors: users.filter((u) => !!u.firstDepositAt).length,
       awaiting: users.filter(
-        (u) => u.verificationStep === 4 && !u.withdrawalApproved,
+        (u) => gateProgress(u).complete && !u.withdrawalApproved,
       ).length,
       approved: users.filter((u) => u.withdrawalApproved).length,
-      unverified: users.filter((u) => u.verificationStep < 4).length,
+      unverified: users.filter((u) => !gateProgress(u).complete).length,
     }),
     [users],
   )
@@ -176,8 +199,9 @@ export default function AdminPlayersPage() {
         <p className="text-sm text-muted-foreground">
           Every registered user. Use <strong>Credit</strong> to top up a
           balance manually (e.g. when Moolre failed but the user paid).
-          Withdrawal approval requires verification (4 qualifying deposits)
-          and a manual <strong>Approve</strong>.
+          Withdrawal approval requires 3 qualifying deposits at or above the
+          player&apos;s country amount (Ghana: GHS 300) and a manual{' '}
+          <strong>Approve</strong>.
         </p>
       </div>
 
@@ -239,7 +263,9 @@ export default function AdminPlayersPage() {
           </div>
         ) : (
           <ul className="divide-y divide-border">
-            {filtered.map((u) => (
+            {filtered.map((u) => {
+              const gate = gateProgress(u)
+              return (
               <li key={u.id} className="px-4 py-3 hover:bg-secondary/30 transition-colors">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -247,7 +273,7 @@ export default function AdminPlayersPage() {
                       <span className="font-semibold text-sm truncate">
                         {u.name}
                       </span>
-                      <StepBadge step={u.verificationStep} />
+                      <StepBadge done={gate.done} total={gate.total} />
                       {u.withdrawalApproved && (
                         <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border border-success/30 text-success bg-success/10">
                           Approved
@@ -293,10 +319,10 @@ export default function AdminPlayersPage() {
                       <Wallet className="w-3 h-3 mr-1" />
                       Credit
                     </Button>
-                    {u.verificationStep < 4 ? (
+                    {!gate.complete ? (
                       <span
                         className="text-[11px] text-muted-foreground"
-                        title="Player hasn't completed all 4 qualifying verification deposits yet."
+                        title={`Player has made ${gate.done} of ${gate.total} qualifying deposits.`}
                       >
                         Awaiting verification
                       </span>
@@ -407,7 +433,8 @@ export default function AdminPlayersPage() {
                   </div>
                 )}
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
       </section>
@@ -450,12 +477,12 @@ function formatJoined(iso: string): string {
   }
 }
 
-function StepBadge({ step }: { step: 0 | 1 | 2 | 3 | 4 }) {
-  const label = `${step}/4`
+function StepBadge({ done, total }: { done: number; total: number }) {
+  const label = `${done}/${total}`
   const cls =
-    step === 4
+    done >= total
       ? 'border-success/30 text-success bg-success/10'
-      : step >= 1
+      : done >= 1
         ? 'border-amber-500/40 text-amber-500 bg-amber-500/10'
         : 'border-border text-muted-foreground'
   return (

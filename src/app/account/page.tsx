@@ -9,7 +9,13 @@ import { cn } from "@/lib/utils";
 import { formatMoneyWithCurrency } from "@/lib/format-money";
 import { GoalAlertsToggle } from "@/components/goal-alerts-toggle";
 import { getUserId, clearUserSession } from "@/lib/user-session";
-import { getCountryForCurrency, getMinFirstDeposit, isCurrencyCode } from "@/lib/countries";
+import {
+  getCountryForCurrency,
+  getMinFirstDeposit,
+  getWithdrawQualifyDepositAmount,
+  getWithdrawQualifyDeposits,
+  isCurrencyCode,
+} from "@/lib/countries";
 
 interface AccountUser {
   id: string;
@@ -19,6 +25,7 @@ interface AccountUser {
   totalDeposited: number;
   totalWithdrawn: number;
   verificationStep: number;
+  qualifyingDeposits?: number;
   withdrawalApproved: boolean;
   phone: string | null;
   firstDepositAt?: string | null;
@@ -426,6 +433,13 @@ function PaymentModal({
   // credit on return.
   const useHostedCheckout = useMoolre || useKorapay || useFlutterwaveHosted;
   const minDeposit = getMinFirstDeposit(userCountry);
+  // Count-based withdrawal gate — 3 deposits at or above the country's
+  // qualifying amount (Ghana: GHS 300). Zero means the count gate is switched
+  // off for this market, so there's nothing to count.
+  const requiredDeposits = getWithdrawQualifyDeposits(userCountry);
+  const qualifyDeposit = getWithdrawQualifyDepositAmount(userCountry);
+  const madeDeposits = user.qualifyingDeposits ?? 0;
+  const gateUnmet = requiredDeposits > 0 && madeDeposits < requiredDeposits;
   // Show the deposit accounts for the user's country; fall back to all if none
   // are configured for their country (so deposits are never blocked).
   const byCountry = DEPOSIT_ACCOUNTS.filter((a) => a.country === userCountry);
@@ -1062,6 +1076,14 @@ function PaymentModal({
 
             {type === "withdraw" && (
               <p className="text-[11.5px] text-[var(--color-ink-dim)]">Available: <span className="num font-bold text-[var(--color-ink)]">{money(user.balance)}</span></p>
+            )}
+
+            {type === "withdraw" && gateUnmet && (
+              <p className="text-[11.5px] text-[var(--color-amber)]">
+                Withdrawals unlock after {requiredDeposits} deposits of{" "}
+                <span className="num font-bold">{money(qualifyDeposit)}</span> or more — you&apos;ve made{" "}
+                <span className="num font-bold">{madeDeposits}</span> of {requiredDeposits}.
+              </p>
             )}
 
             {status && !error && (

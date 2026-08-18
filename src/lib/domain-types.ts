@@ -125,6 +125,11 @@ export interface AppUser {
   totalWithdrawn?: number
   balance?: number
   verificationStep?: 0 | 1 | 2 | 3 | 4
+  /**
+   * Count of deposits at or above the country's qualifying amount. Drives the
+   * count-based withdrawal gate (Ghana: 3 deposits of GHS 300+).
+   */
+  qualifyingDeposits?: number
   withdrawalApproved?: boolean
   createdAt: string
 }
@@ -158,6 +163,17 @@ export interface SubAdmin {
   commissionBalances: Partial<Record<CurrencyCode, number>>
   /** Per-currency lifetime totals. */
   totalCommissionEarnedBy: Partial<Record<CurrencyCode, number>>
+  /**
+   * Where the partner wants commission sent. Set by the partner, read by the
+   * admin when settling up. Free-text network/bank because partners span
+   * several markets and a whitelist would block a legitimate method the moment
+   * a new one appears. All optional — a partner who hasn't filled it in must
+   * still be able to use their dashboard.
+   */
+  payoutName?: string | null
+  payoutNetwork?: string | null
+  payoutNumber?: string | null
+  payoutUpdatedAt?: string | null
 }
 
 export interface PlacedBet {

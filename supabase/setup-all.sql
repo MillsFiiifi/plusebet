@@ -6,10 +6,9 @@
 -- is safe and will not drop data.
 --
 -- REGENERATED from supabase/schema.sql + supabase/migrations/*.sql.
--- The previous version of this file skipped migrations 0013-0018, which made
--- it fail on a fresh database: 0020 runs "alter table bookings" but 0015,
--- which creates that table, had been omitted. Regenerate with the same script
--- rather than editing by hand, so the two can never drift again.
+-- Regenerate with the same script rather than editing by hand: a previous
+-- hand-maintained copy had silently skipped migrations 0013-0018, which made
+-- it fail on a fresh database (0020 alters bookings, which 0015 creates).
 -- ============================================================================
 
 -- ===== schema.sql =====
@@ -70,6 +69,10 @@ create table if not exists public.users (
     -- 4-step withdrawal verification: 0 = none, 1..3 = progressive qualifying deposits paid, 4 = fully verified
     verification_step        integer not null default 0
                              check (verification_step between 0 and 4),
+    -- How many separate deposits at or above the country's qualifying amount
+    -- the player has made; 3 of them unlock withdrawals (Ghana: GHS 300 each)
+    qualifying_deposits      integer not null default 0
+                             check (qualifying_deposits >= 0),
     -- Admin must explicitly flip this before withdrawals are allowed
     withdrawal_approved      boolean not null default false,
     created_at               timestamptz not null default now()
@@ -696,3 +699,91 @@ create table if not exists goal_notifications (
   updated_at  timestamptz not null default now()
 );
 
+-- ===== migrations/0022_sub_admin_payout.sql =====
+-- ============================================================================
+-- 0022 — Sub-admin payout details
+-- ----------------------------------------------------------------------------
+-- Where a partner wants their commission sent. Commission balances were
+-- already tracked per currency, but there was nowhere to record the account to
+-- pay them into — the admin had to ask each partner out-of-band, which does
+-- not scale and leaves no record of what was agreed.
+--
+-- The partner fills these in from their own dashboard; the admin reads them on
+-- the sub-admins page when settling up.
+--
+-- Deliberately free-text rather than a constrained enum of networks: partners
+-- span GH/NG/KE/ZA and beyond (MTN, Telecel, AirtelTigo, OPay, M-Pesa, plus
+-- ordinary banks), and a whitelist here would silently block a legitimate
+-- payout method the moment a new market opens.
+--
+-- Nullable throughout: existing partners have none of this yet, and a partner
+-- must not be locked out of their dashboard for not having filled it in.
+-- ============================================================================
+
+alter table public.sub_admins
+    add column if not exists payout_name    text,
+    add column if not exists payout_network text,
+    add column if not exists payout_number  text,
+    add column if not exists payout_updated_at timestamptz;
+
+
+
+-- ===== migrations/0023_qualifying_deposits.sql =====
+
+-- ============================================================================
+-- 0023 — Count qualifying deposits toward the withdrawal gate
+-- ----------------------------------------------------------------------------
+-- Every market now unlocks withdrawals after THREE separate qualifying
+-- deposits, replacing the old cumulative "deposit X lifetime" gate. Paying the
+-- whole sum in one go must NOT unlock withdrawals, so a running total can no
+-- longer answer the question — we need a count of how many qualifying deposits
+-- the player actually made.
+--
+-- A deposit qualifies when it is at or above the country's qualifying amount:
+-- GHS 300 in Ghana, and each other market's verification amount (NGN 30,000,
+-- KES 2,500, ZAR 350, …). See lib/countries.ts, which is the source of truth —
+-- the thresholds below are a snapshot for the backfill only.
+--
+-- users.qualifying_deposits is incremented by applyDepositCredit() (the single
+-- choke point every credit path goes through: admin credit, admin
+-- 'Credit & resolve', and the Paystack / Moolre / Flutterwave / Korapay /
+-- Telegram auto-credit pipelines) and decremented by reverseDeposit() when an
+-- admin deletes a deposit that never should have counted.
+--
+-- Backfill: replay the payments ledger — every successful deposit row at or
+-- above the player's country threshold counts. Players credited by hand before
+-- the ledger existed start from whatever the ledger shows. Re-running is safe:
+-- the update only touches rows still sitting at 0.
+-- ============================================================================
+
+alter table public.users
+    add column if not exists qualifying_deposits integer not null default 0
+        check (qualifying_deposits >= 0);
+
+update public.users u
+   set qualifying_deposits = l.n
+  from (
+        select p.user_id, count(*) as n
+          from public.payments p
+          join public.users cu on cu.id = p.user_id
+         where p.status = 'success'
+           and coalesce(p.metadata ->> 'type', 'deposit') = 'deposit'
+           and p.amount >= case cu.country
+                               when 'GH' then 300
+                               when 'NG' then 30000
+                               when 'KE' then 2500
+                               when 'ZA' then 350
+                               when 'UG' then 30000
+                               when 'TZ' then 20000
+                               when 'CM' then 5000
+                               when 'ZM' then 200
+                               when 'CI' then 5000
+                               when 'RW' then 10000
+                               when 'US' then 10
+                               when 'GB' then 8
+                               else 300
+                           end
+         group by p.user_id
+       ) l
+ where l.user_id = u.id
+   and u.qualifying_deposits = 0;

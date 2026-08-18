@@ -43,8 +43,22 @@ export interface CountryConfig {
   /**
    * Cumulative amount a player must DEPOSIT (lifetime total) before withdrawals
    * unlock. Optional — falls back to verificationAmount × 4 when unset.
+   * Only consulted when the count-based gate below is switched off
+   * (WITHDRAW_QUALIFY_COUNT_<CC>=0).
    */
   withdrawQualifyTotal?: number
+  /**
+   * How many SEPARATE deposits of withdrawQualifyDepositAmount or more the
+   * player must make before withdrawals unlock. Every market defaults to
+   * WITHDRAW_QUALIFY_DEPOSITS (3) — set this only to override that count for
+   * one country. Paying the whole sum in one go unlocks nothing.
+   */
+  withdrawQualifyDeposits?: number
+  /**
+   * Minimum size of a single deposit for it to count toward
+   * withdrawQualifyDeposits. Falls back to verificationAmount when unset.
+   */
+  withdrawQualifyDepositAmount?: number
   /** Gateway used by deposit flows. */
   gateway: Gateway
   /** Payout target options shown on the withdrawal page. */
@@ -68,7 +82,10 @@ const COUNTRIES: Record<CountryCode, CountryConfig> = {
     kycError: 'Ghana Card number is required (format: GHA-XXXXXXXXX-X)',
     minFirstDeposit: 200,
     verificationAmount: 200,
-    withdrawQualifyTotal: 848,
+    // Withdrawals unlock after THREE deposits of GHS 300+ — one GHS 900
+    // deposit doesn't count for three. Replaces the old GHS 848 lifetime total.
+    // Deposits of GHS 200 are still allowed, they just don't count toward it.
+    withdrawQualifyDepositAmount: 300,
     gateway: 'flutterwave',
     payoutTarget: 'mobile',
     // Keys match the withdraw form's network ids (mtn/vod/atl) so all three
@@ -377,6 +394,9 @@ export function getVerificationAmount(country: CountryCode): number {
  * Cumulative lifetime deposit total a player must reach before withdrawals
  * unlock. Override per-country with WITHDRAW_QUALIFY_<CC> (e.g. WITHDRAW_QUALIFY_GH).
  * Falls back to verificationAmount × 4 when no explicit total is configured.
+ *
+ * Only consulted for countries WITHOUT a count-based gate — see
+ * getWithdrawQualifyDeposits.
  */
 export function getWithdrawQualifyTotal(country: CountryCode): number {
   const raw = process.env[`WITHDRAW_QUALIFY_${country}`]
@@ -384,4 +404,38 @@ export function getWithdrawQualifyTotal(country: CountryCode): number {
   if (Number.isFinite(n) && n > 0) return n
   const cfg = COUNTRIES[country]
   return cfg.withdrawQualifyTotal ?? cfg.verificationAmount * 4
+}
+
+/**
+ * Every market verifies the same way: three separate qualifying deposits
+ * before withdrawals unlock.
+ */
+const WITHDRAW_QUALIFY_DEPOSITS = 3
+
+/**
+ * How many separate qualifying deposits unlock withdrawals. Override
+ * per-country with WITHDRAW_QUALIFY_COUNT_<CC> (e.g. WITHDRAW_QUALIFY_COUNT_GH=3);
+ * setting it to 0 drops that country back to the cumulative-total gate.
+ */
+export function getWithdrawQualifyDeposits(country: CountryCode): number {
+  const raw = process.env[`WITHDRAW_QUALIFY_COUNT_${country}`]
+  // An unset or blank env var must not read as 0 and silently disable the gate.
+  if (raw !== undefined && raw.trim() !== '') {
+    const n = Number(raw)
+    if (Number.isFinite(n) && n >= 0) return Math.floor(n)
+  }
+  return COUNTRIES[country].withdrawQualifyDeposits ?? WITHDRAW_QUALIFY_DEPOSITS
+}
+
+/**
+ * Smallest single deposit that counts toward the count-based gate — GHS 300 in
+ * Ghana, each other market's own verification amount (NGN 30,000, KES 2,500,
+ * ZAR 350, …), since "300" of a currency worth a fraction of a cedi would be
+ * no gate at all. Override per-country with WITHDRAW_QUALIFY_AMOUNT_<CC>.
+ */
+export function getWithdrawQualifyDepositAmount(country: CountryCode): number {
+  const raw = process.env[`WITHDRAW_QUALIFY_AMOUNT_${country}`]
+  const n = Number(raw)
+  if (Number.isFinite(n) && n > 0) return n
+  return COUNTRIES[country].withdrawQualifyDepositAmount ?? getVerificationAmount(country)
 }

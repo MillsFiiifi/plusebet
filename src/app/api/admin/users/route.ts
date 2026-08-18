@@ -25,6 +25,7 @@ export async function GET() {
       country: u.country,
       currency: u.currency,
       verificationStep: u.verificationStep ?? 0,
+      qualifyingDeposits: u.qualifyingDeposits ?? 0,
       withdrawalApproved: u.withdrawalApproved ?? false,
       balance: u.balance ?? 0,
       totalDeposited: u.totalDeposited,

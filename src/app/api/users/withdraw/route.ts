@@ -3,6 +3,8 @@ import { findUserById, recordWithdrawal, setUserPhone } from '@/lib/users-store'
 import { recordPayment } from '@/lib/payments-store'
 import {
   getCountry,
+  getWithdrawQualifyDepositAmount,
+  getWithdrawQualifyDeposits,
   getWithdrawQualifyTotal,
   isCountryCode,
   normalizePhone,
@@ -121,25 +123,50 @@ export async function POST(request: Request) {
     payoutMeta = { ...payoutMeta, accountNumber, bankName }
   }
 
-  // Gate withdrawals behind a cumulative deposit total (country-aware). The
-  // player must have deposited at least this much (lifetime) before withdrawal
-  // options unlock — e.g. GHS 848 for Ghana.
-  const qualifyTotal = getWithdrawQualifyTotal(user.country)
-  const deposited = user.totalDeposited ?? 0
-  if (deposited < qualifyTotal) {
-    const remaining = +(qualifyTotal - deposited).toFixed(2)
-    const verificationMessage = `Account verification in progress. Deposit a total of ${user.currency} ${qualifyTotal} to unlock withdrawals — you've deposited ${user.currency} ${deposited.toFixed(2)} so far (${user.currency} ${remaining} to go).`
-    return NextResponse.json(
-      {
-        error: verificationMessage,
-        verificationRequired: true,
-        depositedTotal: deposited,
-        qualifyTotal,
-        remaining,
-        currency: user.currency,
-      },
-      { status: 403 },
-    )
+  // Gate withdrawals behind the country's deposit requirement. Every market
+  // counts deposits: 3 of them, each at or above the country's qualifying
+  // amount (GHS 300 in Ghana). One GHS 900 deposit counts as one, not three.
+  // The cumulative-total branch below is the fallback for a market where the
+  // count gate has been switched off with WITHDRAW_QUALIFY_COUNT_<CC>=0.
+  const requiredDeposits = getWithdrawQualifyDeposits(user.country)
+  if (requiredDeposits > 0) {
+    const qualifyAmount = getWithdrawQualifyDepositAmount(user.country)
+    const made = user.qualifyingDeposits ?? 0
+    if (made < requiredDeposits) {
+      const remainingDeposits = requiredDeposits - made
+      const verificationMessage = `Account verification in progress. Make ${requiredDeposits} deposits of ${user.currency} ${qualifyAmount} or more to unlock withdrawals — you've made ${made} of ${requiredDeposits} so far (${remainingDeposits} to go).`
+      return NextResponse.json(
+        {
+          error: verificationMessage,
+          verificationRequired: true,
+          qualifyingDeposits: made,
+          requiredDeposits,
+          qualifyDepositAmount: qualifyAmount,
+          remainingDeposits,
+          depositedTotal: user.totalDeposited ?? 0,
+          currency: user.currency,
+        },
+        { status: 403 },
+      )
+    }
+  } else {
+    const qualifyTotal = getWithdrawQualifyTotal(user.country)
+    const deposited = user.totalDeposited ?? 0
+    if (deposited < qualifyTotal) {
+      const remaining = +(qualifyTotal - deposited).toFixed(2)
+      const verificationMessage = `Account verification in progress. Deposit a total of ${user.currency} ${qualifyTotal} to unlock withdrawals — you've deposited ${user.currency} ${deposited.toFixed(2)} so far (${user.currency} ${remaining} to go).`
+      return NextResponse.json(
+        {
+          error: verificationMessage,
+          verificationRequired: true,
+          depositedTotal: deposited,
+          qualifyTotal,
+          remaining,
+          currency: user.currency,
+        },
+        { status: 403 },
+      )
+    }
   }
 
   // Even after verification, the admin still has to flip the
@@ -219,6 +246,7 @@ export async function POST(request: Request) {
         totalWithdrawn: result.user.totalWithdrawn ?? 0,
         balance: result.user.balance ?? 0,
         verificationStep: result.user.verificationStep ?? 0,
+        qualifyingDeposits: result.user.qualifyingDeposits ?? 0,
       },
     },
     { status: 201 },

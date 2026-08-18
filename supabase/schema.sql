@@ -55,6 +55,10 @@ create table if not exists public.users (
     -- 4-step withdrawal verification: 0 = none, 1..3 = progressive qualifying deposits paid, 4 = fully verified
     verification_step        integer not null default 0
                              check (verification_step between 0 and 4),
+    -- How many separate deposits at or above the country's qualifying amount
+    -- the player has made; 3 of them unlock withdrawals (Ghana: GHS 300 each)
+    qualifying_deposits      integer not null default 0
+                             check (qualifying_deposits >= 0),
     -- Admin must explicitly flip this before withdrawals are allowed
     withdrawal_approved      boolean not null default false,
     created_at               timestamptz not null default now()

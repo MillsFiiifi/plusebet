@@ -19,10 +19,16 @@ import {
   creditBalance,
   findUserById,
   recordDeposit,
+  recordQualifyingDeposit,
 } from '@/lib/users-store'
 import { creditCommission, findSubAdminById } from '@/lib/sub-admins-store'
 import { COMMISSION_RATE, type AppUser } from '@/lib/domain-types'
-import { getVerificationAmount, isCountryCode, toInternationalPhone } from '@/lib/countries'
+import {
+  getVerificationAmount,
+  getWithdrawQualifyDepositAmount,
+  isCountryCode,
+  toInternationalPhone,
+} from '@/lib/countries'
 import { formatMoneyWithCurrency } from '@/lib/format-money'
 import { sendSms } from '@/lib/sms'
 
@@ -145,6 +151,24 @@ export async function applyDepositCredit(
         commissionAmount: amt,
         currency: user.currency,
         depositNumber: result.isFirst ? 1 : '2+',
+      })
+    }
+  }
+
+  // Count this deposit toward the withdrawal gate when it clears the country's
+  // qualifying amount (Ghana: GHS 300 — three of them unlock withdrawals).
+  // Counted per deposit, not per cedi, so one big deposit can't stand in for
+  // three. Best-effort like the step bump below — the money has already landed
+  // either way.
+  if (amount >= getWithdrawQualifyDepositAmount(userBefore.country)) {
+    try {
+      const counted = await recordQualifyingDeposit(userId)
+      if (counted) user = counted
+    } catch (e) {
+      console.error('[deposit-credit] qualifying-deposit count failed (deposit already landed)', {
+        userId: user.id,
+        amount,
+        error: e instanceof Error ? e.message : String(e),
       })
     }
   }

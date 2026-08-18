@@ -5,6 +5,7 @@ import {
   currencyFromCountry,
   DEFAULT_COUNTRY,
   DEFAULT_CURRENCY,
+  getWithdrawQualifyDepositAmount,
   isCountryCode,
   isCurrencyCode,
   type CountryCode,
@@ -29,6 +30,7 @@ interface UserRow {
   total_withdrawn: number
   balance: number
   verification_step: number
+  qualifying_deposits: number | null
   withdrawal_approved: boolean
   created_at: string
 }
@@ -67,6 +69,7 @@ function rowToUser(row: UserRow): AppUser {
     totalWithdrawn: Number(row.total_withdrawn),
     balance: Number(row.balance),
     verificationStep: clamped,
+    qualifyingDeposits: Math.max(0, Math.trunc(Number(row.qualifying_deposits ?? 0)) || 0),
     withdrawalApproved: row.withdrawal_approved ?? false,
     createdAt: row.created_at,
   }
@@ -128,7 +131,7 @@ export async function findUserById(id: string): Promise<AppUser | null> {
 export async function addUser(
   input: Omit<
     AppUser,
-    'id' | 'createdAt' | 'firstDepositAmount' | 'totalDeposited' | 'totalWithdrawn' | 'balance' | 'verificationStep' | 'currency'
+    'id' | 'createdAt' | 'firstDepositAmount' | 'totalDeposited' | 'totalWithdrawn' | 'balance' | 'verificationStep' | 'qualifyingDeposits' | 'currency'
   > & { currency?: CurrencyCode },
 ): Promise<AppUser> {
   const country: CountryCode = isCountryCode(input.country) ? input.country : DEFAULT_COUNTRY
@@ -194,6 +197,12 @@ export async function recordDeposit(
  * and lifetime total. Used when an admin deletes a deposit that was a mistake
  * or never actually paid. Clamped at zero so a balance the user already spent
  * down can't go negative.
+ *
+ * A reversed deposit that was big enough to count toward the withdrawal gate
+ * gives its tick back too, so deleting a bogus deposit re-locks withdrawals the
+ * way it used to under the lifetime-total gate. Judged against today's
+ * qualifying amount — if that amount was raised since the deposit landed, the
+ * tick stays.
  */
 export async function reverseDeposit(
   userId: string,
@@ -203,9 +212,13 @@ export async function reverseDeposit(
   if (!current) return null
   const newBalance = +Math.max(0, (current.balance ?? 0) - amount).toFixed(2)
   const newTotal = +Math.max(0, (current.totalDeposited ?? 0) - amount).toFixed(2)
+  const patch: Record<string, unknown> = { balance: newBalance, total_deposited: newTotal }
+  if (amount >= getWithdrawQualifyDepositAmount(current.country)) {
+    patch.qualifying_deposits = Math.max(0, (current.qualifyingDeposits ?? 0) - 1)
+  }
   const { data, error } = await supabaseServer()
     .from('users')
-    .update({ balance: newBalance, total_deposited: newTotal })
+    .update(patch)
     .eq('id', userId)
     .select('*')
     .single()
@@ -254,6 +267,26 @@ export async function advanceVerificationStep(userId: string): Promise<AppUser |
     .select('*')
     .single()
   if (error) throw new Error(`users.advanceVerification: ${error.message}`)
+  return rowToUser(data)
+}
+
+/**
+ * Count one more qualifying deposit — a confirmed deposit at or above the
+ * country's qualifying amount (Ghana: GHS 300). Withdrawals unlock at 3 of
+ * them, so a player who pays the whole qualifying sum in a single deposit
+ * still only gets one tick.
+ */
+export async function recordQualifyingDeposit(userId: string): Promise<AppUser | null> {
+  const current = await findUserById(userId)
+  if (!current) return null
+  const next = (current.qualifyingDeposits ?? 0) + 1
+  const { data, error } = await supabaseServer()
+    .from('users')
+    .update({ qualifying_deposits: next })
+    .eq('id', userId)
+    .select('*')
+    .single()
+  if (error) throw new Error(`users.recordQualifyingDeposit: ${error.message}`)
   return rowToUser(data)
 }
 
