@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { formatMoneyWithCurrency } from "@/lib/format-money";
 import { GoalAlertsToggle } from "@/components/goal-alerts-toggle";
 import { getUserId, clearUserSession } from "@/lib/user-session";
+import { SUPPORT_WHATSAPP_NUMBER, SUPPORT_WHATSAPP_URL } from "@/lib/support";
 import {
   getCountryForCurrency,
   getMinFirstDeposit,
@@ -1110,8 +1111,13 @@ function PaymentModal({
             {type === "deposit" && (
               <p className="text-center text-[11.5px] text-[var(--color-ink-dim)] mt-1">
                 Payment issue?{" "}
-                <a href="mailto:vefayo2163@suahi.com" className="font-semibold text-[var(--color-cyan)] hover:underline">
-                  vefayo2163@suahi.com
+                <a
+                  href={SUPPORT_WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-[var(--color-cyan)] hover:underline num"
+                >
+                  WhatsApp {SUPPORT_WHATSAPP_NUMBER}
                 </a>
               </p>
             )}
