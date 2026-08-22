@@ -35,9 +35,18 @@ interface BetSelectionRow {
   outcome_label: string
   odds: number
   status: 'pending' | 'won' | 'lost' | null
+  sport: string | null
+  kickoff: string | null
+  home_score: number | null
+  away_score: number | null
+  settled_at: string | null
 }
 
 function rowToSelection(row: BetSelectionRow): BetSelection {
+  // A judged leg carries its final score, so the settled ticket can show the
+  // result rather than just a green or red dot. Legs from before migration 0024
+  // have none — they stay score-less and the card drops those rows.
+  const scored = row.home_score != null && row.away_score != null
   const match: Match = {
     id: row.match_id,
     league: row.league,
@@ -46,6 +55,9 @@ function rowToSelection(row: BetSelectionRow): BetSelection {
     awayTeam: row.away_team,
     isLive: false,
     odds: { home: 0, draw: 0, away: 0 },
+    ...(scored ? { homeScore: row.home_score!, awayScore: row.away_score!, minute: 'FT' } : {}),
+    ...(row.kickoff ? { startTimeISO: row.kickoff } : {}),
+    ...(row.sport ? { sport: row.sport } : {}),
   }
   return {
     id: row.id,
@@ -189,6 +201,10 @@ export async function addBet(bet: PlacedBet): Promise<void> {
       outcome_key: s.outcomeKey,
       outcome_label: s.outcomeLabel,
       odds: s.odds,
+      // Kickoff and sport are known now and never again — the match feed moves
+      // on, so the settled ticket would otherwise have no date to show.
+      sport: s.match.sport ?? null,
+      kickoff: s.match.startTimeISO ?? null,
     }))
     const { error: selErr } = await supabaseServer().from('bet_selections').insert(rows)
     if (selErr) throw new Error(`bet_selections.add: ${selErr.message}`)
@@ -244,14 +260,25 @@ export async function settleBetIfPending(
   return rowToBet(data as BetRow, selectionsByBet.get(data.id) ?? [])
 }
 
-/** Set a single selection's result (per-leg colours on the bet card). */
+/**
+ * Set a single selection's result (per-leg colours on the bet card). Pass the
+ * final score when the leg was judged off one — it's stored with the leg so the
+ * expanded ticket can show the player what the match actually finished.
+ */
 export async function setSelectionStatusById(
   selectionId: string,
   status: 'won' | 'lost' | 'pending',
+  score?: { home: number; away: number },
 ): Promise<void> {
+  const patch: Record<string, unknown> = { status }
+  if (score) {
+    patch.home_score = score.home
+    patch.away_score = score.away
+    patch.settled_at = new Date().toISOString()
+  }
   const { error } = await supabaseServer()
     .from('bet_selections')
-    .update({ status })
+    .update(patch)
     .eq('id', selectionId)
   if (error) throw new Error(`bet_selections.setStatusById: ${error.message}`)
 }

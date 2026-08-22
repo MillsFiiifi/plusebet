@@ -98,7 +98,9 @@ export async function settlePendingBets(userId?: string): Promise<SettleResult> 
       const payout = bet.payout ?? bet.potentialWin
       const settled = await settleBetIfPending(bet.id, { status: 'won', settledAt, payout })
       if (!settled) continue // another path already settled it
-      for (const l of legResults) await setSelectionStatusById(l.leg.id, 'won').catch(() => {})
+      for (const l of legResults) {
+        await setSelectionStatusById(l.leg.id, 'won', finished.get(l.leg.matchId)).catch(() => {})
+      }
       if (bet.userId) await creditBalance(bet.userId, payout).catch(() => null)
       result.won++
       result.creditedTotal += payout
@@ -107,7 +109,8 @@ export async function settlePendingBets(userId?: string): Promise<SettleResult> 
       if (!settled) continue
       // Colour each judged leg; undecided legs stay pending (they're moot now).
       for (const l of legResults) {
-        if (l.res !== 'pending') await setSelectionStatusById(l.leg.id, l.res).catch(() => {})
+        if (l.res === 'pending') continue
+        await setSelectionStatusById(l.leg.id, l.res, finished.get(l.leg.matchId)).catch(() => {})
       }
       result.lost++
     }

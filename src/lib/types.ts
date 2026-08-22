@@ -80,10 +80,34 @@ export type Txn = {
   date: string;
 };
 
+/**
+ * One leg of a ticket. `match`/`pick`/`odds`/`result` drive the collapsed row;
+ * the rest is match context for the expanded result view, and is absent on legs
+ * placed or settled before the ticket started keeping it.
+ */
+export type BetLeg = {
+  match: string;
+  pick: string;
+  odds: number;
+  result: "won" | "lost" | "pending";
+  matchId?: string;
+  homeTeam?: string;
+  awayTeam?: string;
+  homeScore?: number;
+  awayScore?: number;
+  /** Kickoff, already formatted for display (e.g. "21/08/2026 22:00"). */
+  kickoff?: string;
+  sport?: string;
+  /** Market the leg was struck on, e.g. "1X2". */
+  market?: string;
+  /** What the match actually finished as — the team name, or "Draw". */
+  outcome?: string;
+};
+
 export type Bet = {
   id: string;
   type: "single" | "multi";
-  legs: { match: string; pick: string; odds: number; result: "won" | "lost" | "pending" }[];
+  legs: BetLeg[];
   stake: number;
   totalOdds: number;
   potential: number;

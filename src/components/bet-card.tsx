@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   ChevronDown,
+  ChevronRight,
   Check,
   X,
   Clock,
@@ -10,7 +12,7 @@ import {
   Copy,
   Trophy,
 } from "lucide-react";
-import type { Bet } from "@/lib/types";
+import type { Bet, BetLeg } from "@/lib/types";
 import { WinCongrats } from "./win-congrats";
 import { cn, cedis } from "@/lib/utils";
 
@@ -45,6 +47,107 @@ const LEG = {
   lost: "text-[var(--color-loss)]",
   pending: "text-[var(--color-warn)]",
 } as const;
+
+/**
+ * One leg, opened up: when it kicked off, how the match actually finished, the
+ * market it was struck on and the pick that was made. A player asking "why did
+ * this lose?" can answer it here instead of guessing from a red dot.
+ *
+ * Every match detail is optional — legs placed or settled before the ticket
+ * started keeping the score have none, so each row is dropped rather than
+ * rendered empty, and such a leg degrades to the pick + odds it always showed.
+ */
+function LegResult({ l }: { l: BetLeg }) {
+  const scored = l.homeScore != null && l.awayScore != null;
+  const home = l.homeTeam ?? l.match;
+  const away = l.awayTeam;
+
+  return (
+    <div className="flex rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] overflow-hidden">
+      <span
+        className={cn(
+          "w-[3px] shrink-0",
+          l.result === "won"
+            ? "bg-[var(--color-accent)]"
+            : l.result === "lost"
+              ? "bg-[var(--color-loss)]"
+              : "bg-[var(--color-warn)]",
+        )}
+      />
+      <div className="min-w-0 flex-1 px-3 py-2.5">
+        <div className="flex items-center gap-2 mb-1.5">
+          {(l.kickoff || l.sport) && (
+            <span className="num text-[10.5px] text-[var(--color-ink-faint)] truncate">
+              {[l.kickoff, l.sport].filter(Boolean).join(" · ")}
+            </span>
+          )}
+          <span
+            className={cn(
+              "ml-auto text-[9.5px] font-bold uppercase tracking-wide shrink-0",
+              LEG[l.result],
+            )}
+          >
+            {l.result}
+          </span>
+        </div>
+
+        <div className="rounded-lg bg-[var(--color-surface-2)] px-2.5 py-2 space-y-0.5">
+          <Team name={home} score={scored ? l.homeScore : undefined} />
+          {away && (
+            <Team name={away} score={scored ? l.awayScore : undefined} ft={scored} />
+          )}
+        </div>
+
+        <dl className="mt-2 space-y-1 text-[11.5px]">
+          {l.market && <Row label="Market" value={l.market} />}
+          {l.outcome && <Row label="Result" value={l.outcome} />}
+          <Row label="Pick" value={`${l.pick} @ ${l.odds.toFixed(2)}`} strong />
+        </dl>
+
+        {l.matchId && (
+          <Link
+            href={`/match/${encodeURIComponent(l.matchId)}`}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-line-2)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] transition"
+          >
+            Match Results <ChevronRight size={12} />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Team({ name, score, ft }: { name: string; score?: number; ft?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[12.5px] font-medium truncate flex-1">{name}</span>
+      {ft && (
+        <span className="text-[9.5px] font-bold uppercase text-[var(--color-ink-faint)]">
+          FT
+        </span>
+      )}
+      {score != null && (
+        <span className="num text-[13px] font-extrabold w-4 text-right">{score}</span>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <dt className="text-[var(--color-ink-faint)]">{label}</dt>
+      <dd
+        className={cn(
+          "ml-auto text-right truncate",
+          strong ? "font-bold text-[var(--color-ink)]" : "text-[var(--color-ink-dim)]",
+        )}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
 
 export function BetCard({ b }: { b: Bet }) {
   const [open, setOpen] = useState(false);
@@ -121,50 +224,24 @@ export function BetCard({ b }: { b: Bet }) {
               @ {b.totalOdds.toFixed(2)}
             </div>
           </div>
-          <ChevronDown
-            size={16}
-            className={cn(
-              "text-[var(--color-ink-faint)] transition-transform",
-              open && "rotate-180",
-            )}
-          />
+          {/* Spelling out the affordance: a lone chevron didn't read as
+              "the result of every match is in here". */}
+          <span className="flex flex-col items-center gap-0.5 text-[var(--color-ink-faint)]">
+            <ChevronDown
+              size={16}
+              className={cn("transition-transform", open && "rotate-180")}
+            />
+            <span className="text-[8.5px] font-bold uppercase tracking-wide">
+              {open ? "Hide" : "Details"}
+            </span>
+          </span>
         </div>
       </button>
 
       {open && (
         <div className="border-t border-[var(--color-line)] px-4 py-3 space-y-2.5 bg-[var(--color-bg-2)]/50 animate-rise">
           {b.legs.map((l, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full shrink-0",
-                  l.result === "won"
-                    ? "bg-[var(--color-accent)]"
-                    : l.result === "lost"
-                      ? "bg-[var(--color-loss)]"
-                      : "bg-[var(--color-warn)]",
-                )}
-              />
-              <div className="min-w-0 flex-1">
-                <div className="text-[12.5px] font-medium truncate">
-                  {l.pick}
-                </div>
-                <div className="text-[10.5px] text-[var(--color-ink-faint)] truncate">
-                  {l.match}
-                </div>
-              </div>
-              <span className="num text-[12px] font-bold shrink-0">
-                {l.odds.toFixed(2)}
-              </span>
-              <span
-                className={cn(
-                  "text-[10px] font-bold uppercase w-12 text-right shrink-0",
-                  LEG[l.result],
-                )}
-              >
-                {l.result}
-              </span>
-            </div>
+            <LegResult key={i} l={l} />
           ))}
           <div className="flex items-center justify-between pt-2.5 border-t border-[var(--color-line)] text-[12px]">
             <span className="text-[var(--color-ink-dim)]">Stake</span>

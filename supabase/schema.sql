@@ -121,6 +121,12 @@ create table if not exists public.bet_selections (
     outcome_key    text not null,
     outcome_label  text not null default '',
     odds           numeric(18, 4) not null check (odds >= 1),
+    -- Match context kept with the leg so a settled ticket can show the result
+    sport          text,
+    kickoff        timestamptz,
+    home_score     integer,
+    away_score     integer,
+    settled_at     timestamptz,
     -- Per-leg result so the bet card can colour each match green/red
     status         text not null default 'pending'
                    check (status in ('pending', 'won', 'lost'))

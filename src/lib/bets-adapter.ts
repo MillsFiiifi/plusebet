@@ -13,6 +13,29 @@ function matchLabel(s: BetSelection): string {
   return s.marketLabel ?? 'Match'
 }
 
+/** Kickoff stamp on a settled leg — "21/08/2026 22:00", like the ticket. */
+function fmtKickoff(iso: string | undefined): string | undefined {
+  if (!iso) return undefined
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return undefined
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+/**
+ * What the match actually finished as, for the "Result" row. Only derivable
+ * from a final score on a match-result leg — other markets (over/under, BTTS)
+ * would need their own judging, so they show no result line rather than a
+ * wrong one.
+ */
+function outcomeFrom(s: BetSelection): string | undefined {
+  const m = s.match
+  if (m?.homeScore == null || m?.awayScore == null) return undefined
+  if (m.homeScore > m.awayScore) return m.homeTeam || 'Home'
+  if (m.homeScore < m.awayScore) return m.awayTeam || 'Away'
+  return 'Draw'
+}
+
 function fmtDate(iso: string | undefined): string {
   if (!iso) return ''
   const d = new Date(iso)
@@ -40,6 +63,16 @@ export function placedBetToUi(b: PlacedBet): Bet {
     pick: s.outcomeLabel ?? s.marketLabel ?? '—',
     odds: Number(s.odds) || 0,
     result: (s.status ?? 'pending') as 'won' | 'lost' | 'pending',
+    matchId: s.matchId,
+    homeTeam: s.match?.homeTeam,
+    awayTeam: s.match?.awayTeam,
+    homeScore: s.match?.homeScore,
+    awayScore: s.match?.awayScore,
+    kickoff: fmtKickoff(s.match?.startTimeISO),
+    // Stored lowercase ("football"); the ticket reads better title-cased.
+    sport: s.match?.sport ? s.match.sport[0].toUpperCase() + s.match.sport.slice(1) : undefined,
+    market: s.marketLabel || undefined,
+    outcome: outcomeFrom(s),
   }))
 
   return {
