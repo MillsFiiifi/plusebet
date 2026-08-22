@@ -59,6 +59,9 @@ const blankForm: CreateForm = {
  * which sends whoever is running the admin looking in entirely the wrong place.
  * Carry the status and whatever the body did say instead.
  */
+/** What any of the admin endpoints can answer with. */
+type AdminReply = { error?: string; url?: string; match?: Match; matches?: Match[] }
+
 async function readJson<T = Record<string, unknown>>(res: Response): Promise<T> {
   const text = await res.text()
   if (!text) {
@@ -111,9 +114,9 @@ export default function AdminCustomMatchesPage() {
       const body = new FormData()
       body.append('file', file)
       const res = await fetch('/api/admin/upload-flag', { method: 'POST', body })
-      const data = await readJson<{ error?: string; url?: string; match?: Match }>(res).catch(
-        (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }),
-      )
+      const data: AdminReply = await readJson<AdminReply>(res).catch((e: unknown) => ({
+        error: e instanceof Error ? e.message : String(e),
+      }))
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
       update(side === 'home' ? 'homeFlagUrl' : 'awayFlagUrl', data.url as string)
     } catch (e) {
@@ -203,9 +206,9 @@ export default function AdminCustomMatchesPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(patch),
       })
-      const data = await readJson<{ error?: string; url?: string; match?: Match }>(res).catch(
-        (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }),
-      )
+      const data: AdminReply = await readJson<AdminReply>(res).catch((e: unknown) => ({
+        error: e instanceof Error ? e.message : String(e),
+      }))
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
       setMatches((prev) =>
         prev.map((m) => (m.id === id ? { ...m, ...(data.match as Match) } : m)),
@@ -689,9 +692,9 @@ function ExistingMatchRow({ match, busy, onDelete, onPatch }: ExistingMatchRowPr
       const body = new FormData()
       body.append('file', file)
       const res = await fetch('/api/admin/upload-flag', { method: 'POST', body })
-      const data = await readJson<{ error?: string; url?: string; match?: Match }>(res).catch(
-        (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }),
-      )
+      const data: AdminReply = await readJson<AdminReply>(res).catch((e: unknown) => ({
+        error: e instanceof Error ? e.message : String(e),
+      }))
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
       onPatch(side === 'home' ? { homeFlagUrl: data.url } : { awayFlagUrl: data.url })
     } catch {
