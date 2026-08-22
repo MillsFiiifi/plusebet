@@ -207,7 +207,18 @@ export async function addBet(bet: PlacedBet): Promise<void> {
       kickoff: s.match.startTimeISO ?? null,
     }))
     const { error: selErr } = await supabaseServer().from('bet_selections').insert(rows)
-    if (selErr) throw new Error(`bet_selections.add: ${selErr.message}`)
+    if (selErr) {
+      // 42703 = undefined_column: migration 0024 hasn't been run on this
+      // database yet. The parent bet row is already in, so failing here would
+      // leave a ticket with no legs and a stake already taken. The match
+      // context is a nicety; the ticket is the product — drop the former and
+      // save the latter.
+      if (selErr.code !== '42703') throw new Error(`bet_selections.add: ${selErr.message}`)
+      console.warn('[bets] bet_selections is missing the 0024 columns — inserting without match context')
+      const legacy = rows.map(({ sport: _sport, kickoff: _kickoff, ...rest }) => rest)
+      const { error: retryErr } = await supabaseServer().from('bet_selections').insert(legacy)
+      if (retryErr) throw new Error(`bet_selections.add: ${retryErr.message}`)
+    }
   }
 }
 
@@ -261,6 +272,41 @@ export async function settleBetIfPending(
 }
 
 /**
+ * How many legs have been struck on each match since `sinceISO` — the signal
+ * behind the "hot" flame on the fixture list. Counts selections rather than
+ * tickets, so a match riding a lot of accumulators reads as busy, which is what
+ * a player scanning the list is actually asking.
+ */
+export async function popularMatchCounts(sinceISO: string): Promise<Record<string, number>> {
+  const sb = supabaseServer()
+  const { data: betRows, error } = await sb
+    .from('bets')
+    .select('id')
+    .gte('placed_at', sinceISO)
+  if (error) throw new Error(`bets.popularIds: ${error.message}`)
+
+  const ids = (betRows ?? []).map((r) => (r as { id: string }).id)
+  if (ids.length === 0) return {}
+
+  const counts: Record<string, number> = {}
+  // Chunked: a single `in` list of every recent bet id would outgrow the
+  // request URL on a busy day.
+  const CHUNK = 200
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const { data, error: legErr } = await sb
+      .from('bet_selections')
+      .select('match_id')
+      .in('bet_id', ids.slice(i, i + CHUNK))
+    if (legErr) throw new Error(`bets.popularCounts: ${legErr.message}`)
+    for (const row of data ?? []) {
+      const id = (row as { match_id: string }).match_id
+      counts[id] = (counts[id] ?? 0) + 1
+    }
+  }
+  return counts
+}
+
+/**
  * Set a single selection's result (per-leg colours on the bet card). Pass the
  * final score when the leg was judged off one — it's stored with the leg so the
  * expanded ticket can show the player what the match actually finished.
@@ -280,7 +326,16 @@ export async function setSelectionStatusById(
     .from('bet_selections')
     .update(patch)
     .eq('id', selectionId)
-  if (error) throw new Error(`bet_selections.setStatusById: ${error.message}`)
+  if (!error) return
+  // Same fallback as the insert: on a database without migration 0024, record
+  // the result and let the score go. A leg that settles without its score is
+  // worth more than one that never settles.
+  if (error.code !== '42703') throw new Error(`bet_selections.setStatusById: ${error.message}`)
+  const { error: retryErr } = await supabaseServer()
+    .from('bet_selections')
+    .update({ status })
+    .eq('id', selectionId)
+  if (retryErr) throw new Error(`bet_selections.setStatusById: ${retryErr.message}`)
 }
 
 /**

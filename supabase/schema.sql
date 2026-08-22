@@ -152,6 +152,8 @@ create table if not exists public.custom_matches (
     start_time      text,
     start_time_utc  timestamptz,
     is_live         boolean not null default false,
+    -- Operator flag: show a BEST ODDS chip on this fixture
+    boosted         boolean not null default false,
     odds_home       numeric(10, 2) not null check (odds_home >= 1),
     odds_draw       numeric(10, 2) not null default 0 check (odds_draw >= 0),
     odds_away       numeric(10, 2) not null check (odds_away >= 1),

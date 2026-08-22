@@ -19,6 +19,7 @@ interface CustomMatchRow {
   start_time_utc: string | null
   is_live: boolean
   locked: boolean
+  boosted: boolean | null
   odds_home: number
   odds_draw: number
   odds_away: number
@@ -169,6 +170,7 @@ function rowToMatch(row: CustomMatchRow): Match {
     startTimeISO: startISO,
     isLive,
     locked: row.locked ?? false,
+    boosted: row.boosted ?? false,
     odds,
     sport: row.sport,
     custom: true,
@@ -197,6 +199,7 @@ function matchToRow(input: Omit<Match, 'id' | 'custom'> & { sport: string }) {
     start_time_utc: input.startTimeISO ?? null,
     is_live: input.isLive,
     locked: input.locked ?? false,
+    boosted: input.boosted ?? false,
     odds_home: input.odds.home,
     odds_draw: input.odds.draw,
     odds_away: input.odds.away,
@@ -226,13 +229,24 @@ export async function readCustomMatchesForSport(sport: string): Promise<Match[]>
 export async function addCustomMatch(
   input: Omit<Match, 'id' | 'custom'> & { sport: string },
 ): Promise<Match> {
+  const row = matchToRow(input)
   const { data, error } = await supabaseServer()
     .from('custom_matches')
-    .insert(matchToRow(input))
+    .insert(row)
     .select('*')
     .single()
-  if (error) throw new Error(`customMatches.add: ${error.message}`)
-  return rowToMatch(data as CustomMatchRow)
+  if (!error) return rowToMatch(data as CustomMatchRow)
+  // 42703 = undefined_column: this database predates migration 0025, which adds
+  // the BEST ODDS flag. Creating the fixture matters; the flag can wait.
+  if (error.code !== '42703') throw new Error(`customMatches.add: ${error.message}`)
+  const { boosted: _boosted, ...legacy } = row
+  const { data: retryData, error: retryErr } = await supabaseServer()
+    .from('custom_matches')
+    .insert(legacy)
+    .select('*')
+    .single()
+  if (retryErr) throw new Error(`customMatches.add: ${retryErr.message}`)
+  return rowToMatch(retryData as CustomMatchRow)
 }
 
 export async function updateCustomMatch(
@@ -263,6 +277,7 @@ export async function updateCustomMatch(
   if (patch.goals !== undefined) dbPatch.goals = patch.goals
   if (patch.isLive !== undefined) dbPatch.is_live = patch.isLive
   if (patch.locked !== undefined) dbPatch.locked = patch.locked
+  if (patch.boosted !== undefined) dbPatch.boosted = patch.boosted
   if (patch.sport !== undefined) dbPatch.sport = patch.sport
   if (patch.odds) {
     dbPatch.odds_home = patch.odds.home

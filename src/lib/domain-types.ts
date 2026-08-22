@@ -42,6 +42,8 @@ export interface Match {
   /** Admin marked the match postponed — players see a "Postponed" badge and
    *  new bets are locked. Existing bets are left untouched. */
   postponed?: boolean
+  /** Admin pushed this fixture's prices — the row carries a BEST ODDS chip. */
+  boosted?: boolean
   /** Scripted goal timeline (custom matches): drives the live score off the clock. */
   goals?: MatchGoal[]
 }

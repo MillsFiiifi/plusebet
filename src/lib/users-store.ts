@@ -69,7 +69,14 @@ function rowToUser(row: UserRow): AppUser {
     totalWithdrawn: Number(row.total_withdrawn),
     balance: Number(row.balance),
     verificationStep: clamped,
-    qualifyingDeposits: Math.max(0, Math.trunc(Number(row.qualifying_deposits ?? 0)) || 0),
+    // Left undefined — not 0 — when the column isn't there at all, so a database
+    // still waiting on migration 0023 falls back to the cumulative-total gate
+    // instead of reading as "nobody has made a qualifying deposit" and locking
+    // every withdrawal on the platform.
+    qualifyingDeposits:
+      row.qualifying_deposits == null
+        ? undefined
+        : Math.max(0, Math.trunc(Number(row.qualifying_deposits)) || 0),
     withdrawalApproved: row.withdrawal_approved ?? false,
     createdAt: row.created_at,
   }

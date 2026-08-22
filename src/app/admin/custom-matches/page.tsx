@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Loader2, CircleAlert, CheckCircle2, Upload, X, Lock, Unlock } from 'lucide-react'
+import { Plus, Trash2, Loader2, CircleAlert, CheckCircle2, Upload, X, Lock, Unlock, Zap } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -793,6 +793,27 @@ function ExistingMatchRow({ match, busy, onDelete, onPatch }: ExistingMatchRowPr
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
+          {!editing && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onPatch({ boosted: !match.boosted })}
+              disabled={busy}
+              className={`h-8 text-xs gap-1 ${
+                match.boosted ? 'text-success border-success/40 hover:bg-success/10' : ''
+              }`}
+              title={
+                match.boosted
+                  ? 'Remove the BEST ODDS chip from this fixture'
+                  : 'Flag this fixture with a BEST ODDS chip on the player list'
+              }
+            >
+              <Zap className="w-3 h-3" />
+              <span className="hidden sm:inline">
+                {match.boosted ? 'Boosted' : 'Boost'}
+              </span>
+            </Button>
+          )}
           {!editing && (
             <Button
               size="sm"

@@ -58,6 +58,8 @@ export type Match = {
   board?: MarketBoard;
   marketCount: number;
   featured?: boolean;
+  /** Operator pushed this fixture's prices — shows a BEST ODDS chip. */
+  boosted?: boolean;
   locked?: boolean; // betting closed (match started / live / admin-locked)
   lockLabel?: string; // short reason shown on the card, e.g. "Started"
 };

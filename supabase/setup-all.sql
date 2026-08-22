@@ -166,6 +166,8 @@ create table if not exists public.custom_matches (
     start_time      text,
     start_time_utc  timestamptz,
     is_live         boolean not null default false,
+    -- Operator flag: show a BEST ODDS chip on this fixture
+    boosted         boolean not null default false,
     odds_home       numeric(10, 2) not null check (odds_home >= 1),
     odds_draw       numeric(10, 2) not null default 0 check (odds_draw >= 0),
     odds_away       numeric(10, 2) not null check (odds_away >= 1),
@@ -840,3 +842,19 @@ update public.bet_selections s
   from public.custom_matches m
  where m.id::text = s.match_id
    and (s.sport is null or s.kickoff is null);
+
+
+-- ===== migrations/0025_custom_match_boosted.sql =====
+
+-- ============================================================================
+-- 0025 — Operator-flagged "best odds" fixtures
+-- ----------------------------------------------------------------------------
+-- The fixture list can now carry a BEST ODDS chip. It is deliberately a flag
+-- the operator sets on a match, not something the app infers: we have no
+-- price-comparison feed, so any computed version of that claim would be
+-- decoration. The admin marks the fixtures whose prices they want to push, and
+-- the chip means exactly that.
+-- ============================================================================
+
+alter table public.custom_matches
+    add column if not exists boosted boolean not null default false;

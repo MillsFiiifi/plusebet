@@ -137,9 +137,11 @@ html {
 }
 
 body {
-  /* Flat white. The old build painted two large radial gradients here; on the
-     mid-range Android this audience actually uses, a full-viewport gradient
-     repaints on every scroll. Solid colour is free. */
+  /* The page's own paint stays flat: the old build put its gradients on <body>,
+     and a background that scrolls with the document repaints the whole viewport
+     on every frame of a scroll on the mid-range Androids this audience uses.
+     The atmosphere lives on the fixed layer below instead, which is composited
+     once and then sits still while the content moves over it. */
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-body);
@@ -148,6 +150,41 @@ body {
      On a light page it makes text look anaemic, so it is dropped. */
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
+}
+
+/* ---- Backdrop ----
+   Three soft brand-green washes and one hairline diagonal weave, on a fixed
+   layer behind everything. Deliberately faint: it should register as depth
+   behind the cards, never as texture competing with a price. Percentages this
+   low still read on an OLED phone in a dark room, which is where this gets
+   used. Static — no animation, nothing to re-composite. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      68% 42% at 50% -6%,
+      color-mix(in srgb, var(--color-accent) 13%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      46% 34% at 108% 10%,
+      color-mix(in srgb, var(--color-accent) 9%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      58% 40% at -8% 96%,
+      color-mix(in srgb, var(--color-accent) 8%, transparent),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      115deg,
+      transparent 0 23px,
+      color-mix(in srgb, var(--color-ink) 2%, transparent) 23px 24px
+    );
 }
 
 ::selection {

@@ -128,7 +128,11 @@ export async function POST(request: Request) {
   // amount (GHS 300 in Ghana). One GHS 900 deposit counts as one, not three.
   // The cumulative-total branch below is the fallback for a market where the
   // count gate has been switched off with WITHDRAW_QUALIFY_COUNT_<CC>=0.
-  const requiredDeposits = getWithdrawQualifyDeposits(user.country)
+  // `qualifyingDeposits` is undefined only when the database predates migration
+  // 0023 — count nothing there and every withdrawal on the platform would read
+  // as unqualified, so that case falls through to the total gate instead.
+  const requiredDeposits =
+    user.qualifyingDeposits === undefined ? 0 : getWithdrawQualifyDeposits(user.country)
   if (requiredDeposits > 0) {
     const qualifyAmount = getWithdrawQualifyDepositAmount(user.country)
     const made = user.qualifyingDeposits ?? 0

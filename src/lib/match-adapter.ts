@@ -193,6 +193,7 @@ export function apiMatchToUi(api: ApiMatch): UiMatch {
     board: buildBoard(api),
     marketCount: countMarkets(api.markets),
     featured: false,
+    boosted: api.boosted ?? false,
     locked: bet.closed,
     lockLabel: bet.reason ? LOCK_LABEL[bet.reason] : undefined,
   }

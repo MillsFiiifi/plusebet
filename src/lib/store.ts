@@ -1,6 +1,39 @@
 import { create } from "zustand";
 import type { Selection } from "./types";
 
+/**
+ * Legs struck per match in the last day, behind the fixture list's flame.
+ * Kept in a store rather than threaded through the list so a row can read it
+ * without every intermediate component having to carry it. One fetch per page
+ * view: `load` is a no-op once it has run, and the counts move slowly enough
+ * that a stale flame costs nothing.
+ */
+type PopularState = {
+  counts: Record<string, number>;
+  status: "idle" | "loading" | "ready";
+  load: () => Promise<void>;
+};
+
+export const usePopular = create<PopularState>((set, get) => ({
+  counts: {},
+  status: "idle",
+  load: async () => {
+    if (get().status !== "idle") return;
+    set({ status: "loading" });
+    try {
+      const res = await fetch("/api/matches/popular");
+      const data = (await res.json()) as { counts?: Record<string, number> };
+      set({ counts: data.counts ?? {}, status: "ready" });
+    } catch {
+      // A flame that never lights is better than a list that fails to render.
+      set({ status: "ready" });
+    }
+  },
+}));
+
+/** Legs on a match before it counts as hot — below this it's just noise. */
+export const HOT_LEG_THRESHOLD = 3;
+
 type SlipState = {
   selections: Selection[];
   stake: number;

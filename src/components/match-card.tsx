@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ChevronRight, ChevronDown, Lock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronRight, ChevronDown, Lock, Flame, LineChart } from "lucide-react";
 import type { Match, MarketKey, MarketPick } from "@/lib/types";
-import { useSlip } from "@/lib/store";
+import { HOT_LEG_THRESHOLD, useSlip, usePopular } from "@/lib/store";
 import { TeamBadge, CountryFlag } from "./brand";
 import { LiveClock } from "./live-clock";
 import { cn } from "@/lib/utils";
@@ -141,6 +141,9 @@ export function FixtureRow({
 }) {
   const tab = marketTab(market);
   const picks = picksFor(m, market);
+  // Legs struck on this match in the last day. Read straight from the store so
+  // nothing has to be threaded down through the list to reach a row.
+  const hot = usePopular((s) => s.counts[m.id] ?? 0);
   return (
     <div className="fixture-row">
       {/* time / live minute */}
@@ -171,9 +174,10 @@ export function FixtureRow({
       </div>
 
       {/* teams — two tight lines, score on the right when live */}
+      <div className="fx-teams min-w-0 flex flex-col justify-center">
       <Link
         href={`/match/${m.id}`}
-        className="fx-teams flex items-center gap-2 min-w-0 group"
+        className="flex items-center gap-2 min-w-0 group"
       >
         <div className="flex flex-col gap-1 min-w-0 flex-1">
           <span className="flex items-center gap-1.5 min-w-0">
@@ -210,6 +214,36 @@ export function FixtureRow({
           </div>
         )}
       </Link>
+
+      {/* Signals under the fixture. Only rendered when a row has something to
+          say — a badge line on every row would cost the list the density that
+          makes it scannable. */}
+      {(m.boosted || hot >= HOT_LEG_THRESHOLD || m.live) && (
+        <span className="flex items-center gap-1.5 mt-1 pl-[22px]">
+          {m.boosted && (
+            <span className="text-[8.5px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border border-[var(--color-accent)]/35 text-[var(--color-accent)] bg-[var(--color-accent)]/10">
+              Best odds
+            </span>
+          )}
+          {hot >= HOT_LEG_THRESHOLD && (
+            <span
+              className="flex items-center gap-0.5 text-[9.5px] font-bold text-[var(--color-loss)]"
+              title={`${hot} bets on this match in the last 24 hours`}
+            >
+              <Flame size={10} />
+              <span className="num">{hot}</span>
+            </span>
+          )}
+          <Link
+            href={`/match/${m.id}`}
+            aria-label={`Stats and markets for ${m.home} v ${m.away}`}
+            className="text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] transition-colors"
+          >
+            <LineChart size={11} />
+          </Link>
+        </span>
+      )}
+      </div>
 
       {/* Odds — `display: contents` on sm+ so these sit in the shared grid */}
       <div className="fx-odds">
@@ -332,6 +366,13 @@ export function FixtureList({
   empty: string;
   market?: MarketKey;
 }) {
+  // One fetch per page view, wherever a list is shown; the store no-ops the
+  // repeat calls from the other lists on the same page.
+  const loadPopular = usePopular((s) => s.load);
+  useEffect(() => {
+    void loadPopular();
+  }, [loadPopular]);
+
   if (matches.length === 0) {
     return (
       <div className="card px-4 py-8 text-center">
