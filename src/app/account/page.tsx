@@ -40,12 +40,11 @@ const NETWORKS = [
 ] as const;
 
 // Manual-deposit agent accounts shown on the deposit screen (each with its
-// network logo). Customers see the accounts for their own country and pay any
-// one, then upload the screenshot.
+// network logo). Customers see the accounts for their own country, then upload
+// the screenshot. With only a Ghana account listed, the "no account for this
+// country" fallback below means every market pays this same number.
 const DEPOSIT_ACCOUNTS = [
-  { country: "GH", name: "Adjei Bright", number: "0502470854", network: "TELECEL CASH", logo: "/networks/telecel.svg" },
-  { country: "GH", name: "KOJO MABIGMAN", number: "0534922921", network: "MTN MoMo", logo: "/networks/mtn.svg" },
-  { country: "NG", name: "Onwueme Hilary", number: "2043162107", network: "Kuda Microfinance Bank", logo: "/networks/kuda.svg", flag: "/flags/nigeria.svg" },
+  { country: "GH", name: "Angela", number: "0597018113", network: "MTN MoMo", logo: "/networks/mtn.svg" },
 ] as const;
 
 export default function AccountPage() {
@@ -953,7 +952,9 @@ function PaymentModal({
               </div>
               ) : (
               <div className="rounded-xl border border-[var(--color-violet)]/30 bg-[var(--color-surface-2)] px-3.5 py-3.5">
-                <p className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">Send your deposit to any of these</p>
+                <p className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">
+                  {accounts.length > 1 ? "Send your deposit to any of these" : "Send your deposit to this account"}
+                </p>
                 <div className="space-y-2 mt-2">
                   {accounts.map((a) => {
                     const flag = (a as { flag?: string }).flag;
@@ -983,7 +984,7 @@ function PaymentModal({
                   })}
                 </div>
                 <ol className="text-[11.5px] text-[var(--color-ink-dim)] leading-relaxed mt-3 list-decimal list-inside space-y-0.5">
-                  <li>Send the exact amount to one of the numbers above.</li>
+                  <li>Send the exact amount to the {accounts.length > 1 ? "numbers" : "number"} above.</li>
                   <li>Enter the amount and upload your payment screenshot below.</li>
                   <li>We confirm and credit your balance — usually within minutes.</li>
                 </ol>

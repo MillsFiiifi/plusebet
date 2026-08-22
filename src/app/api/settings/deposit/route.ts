@@ -11,7 +11,7 @@ export async function GET() {
   // overriding this, showing an old name.)
   const s = await getSettings(['deposit_number', 'deposit_name'])
   return NextResponse.json({
-    number: s.deposit_number || '0534922921',
-    name: s.deposit_name || 'KOJO MABIGMAN',
+    number: s.deposit_number || '0597018113',
+    name: s.deposit_name || 'Angela',
   })
 }
