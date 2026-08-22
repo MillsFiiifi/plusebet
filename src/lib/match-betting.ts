@@ -224,6 +224,11 @@ export interface LiveClock {
   label: string
   /** True while the match should be shown as live. */
   live: boolean
+  /**
+   * Which half a live football match is in. Absent at half-time and full time
+   * (the label already says so), and for sports without two halves.
+   */
+  half?: 'H1' | 'H2'
 }
 
 /**
@@ -254,9 +259,11 @@ export function liveClockLabel(
   const firstHalfSec = FIRST_HALF_MIN * 60
   const breakSec = HALF_TIME_BREAK_MIN * 60
   const fullWallSec = FOOTBALL_FULL_WALL * 60
-  if (elapsedSec < firstHalfSec) return { label: clockFromSeconds(elapsedSec), live: true } // 0:00→44:59
+  if (elapsedSec < firstHalfSec) return { label: clockFromSeconds(elapsedSec), live: true, half: 'H1' } // 0:00→44:59
   if (elapsedSec < firstHalfSec + breakSec) return { label: 'HT', live: true } // half-time break
-  if (elapsedSec < fullWallSec) return { label: clockFromSeconds(elapsedSec - breakSec), live: true } // 45:00→89:59
+  if (elapsedSec < fullWallSec) {
+    return { label: clockFromSeconds(elapsedSec - breakSec), live: true, half: 'H2' } // 45:00→89:59
+  }
   return { label: 'FT', live: false }
 }
 

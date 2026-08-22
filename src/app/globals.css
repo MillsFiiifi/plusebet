@@ -251,6 +251,54 @@ img, svg { user-select: none; -webkit-user-drag: none; }
 }
 .odds-btn[data-active="true"] * { color: var(--color-accent-ink) !important; }
 
+/* ---- Odds drift ----
+   A price that moved since the last poll keeps a tinted edge and a direction
+   arrow until it moves again — the read a trading board gives you at a glance.
+   Selected wins over drift: the pick you made must stay the loudest cell. */
+.odds-btn[data-drift="up"]:not([data-active="true"]) {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line));
+}
+.odds-btn[data-drift="down"]:not([data-active="true"]) {
+  border-color: color-mix(in srgb, var(--color-loss) 55%, var(--color-line));
+}
+
+/* Direction lives on the wrapper so the arrow and the flash both read it
+   through currentColor. Taken out of flow: an in-flow marker would add a line
+   box to the cell's flex column and nudge the price off centre. */
+.drift {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.drift[data-dir="up"] { color: var(--color-accent); }
+.drift[data-dir="down"] { color: var(--color-loss); }
+
+.drift-mark {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  line-height: 1;
+  font-size: 7.5px;
+}
+
+/* One-shot tint over the whole cell. The wrapper is keyed by the price, so a
+   new price remounts it and replays this without any timer to manage. */
+.drift-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: driftFlash 1.4s ease-out 1;
+}
+@keyframes driftFlash {
+  0% { background: color-mix(in srgb, currentColor 22%, transparent); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drift-flash { animation: none; }
+}
+
 /* ---- Chip / pill ---- */
 .chip {
   font-size: 11px;

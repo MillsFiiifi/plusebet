@@ -31,9 +31,30 @@ function picksFor(m: Match, market: MarketKey): MarketPick[] | null {
   return null;
 }
 
+/**
+ * Which way this price last moved, or null until it moves at all.
+ *
+ * State is adjusted during render off the incoming price rather than in an
+ * effect, so the arrow is on screen in the same paint as the new number — a
+ * price that ticks up and shows its arrow a frame later reads as a glitch.
+ * Each cell keeps its own history, so nothing has to be threaded down from the
+ * feed; the trade-off is that a cell remounted by a list reorder starts over.
+ */
+function useDrift(odds: number): "up" | "down" | null {
+  const [seen, setSeen] = useState<{ odds: number; dir: "up" | "down" | null }>({
+    odds,
+    dir: null,
+  });
+  if (seen.odds !== odds) {
+    setSeen({ odds, dir: odds > seen.odds ? "up" : "down" });
+  }
+  return seen.dir;
+}
+
 /* ------------------------------------------------------------------
  One odds cell. Quiet at rest, solid accent when selected — the
  selected state is intentionally the loudest thing on the page.
+ A price that has drifted since the last poll carries the direction.
  ------------------------------------------------------------------ */
 function OddsCell({
   m,
@@ -51,13 +72,17 @@ function OddsCell({
   const toggle = useSlip((s) => s.toggle);
   const locked = m.locked;
   const slipLabel = marketTab(market).slipLabel;
+  const drift = useDrift(p.odds);
 
   return (
     <button
       data-active={has}
+      data-drift={drift ?? undefined}
       disabled={locked}
       aria-pressed={has}
-      aria-label={`${p.pick} at ${p.odds.toFixed(2)}`}
+      aria-label={`${p.pick} at ${p.odds.toFixed(2)}${
+        drift ? `, drifted ${drift}` : ""
+      }`}
       onClick={(e) => {
         e.preventDefault();
         if (locked) return;
@@ -76,6 +101,13 @@ function OddsCell({
         {p.label}
       </span>
       <span className="text-[13px]">{p.odds.toFixed(2)}</span>
+      {drift && !has && (
+        // Keyed by the price: a fresh price remounts this and replays the flash.
+        <span key={p.odds} className="drift" data-dir={drift} aria-hidden>
+          <span className="drift-flash" />
+          <span className="drift-mark">{drift === "up" ? "▲" : "▼"}</span>
+        </span>
+      )}
     </button>
   );
 }
@@ -120,6 +152,7 @@ export function FixtureRow({
               startTimeISO={m.startTimeISO}
               sport={m.sport}
               fallbackMinute={m.minute}
+              showHalf
               className="num text-[10.5px] font-bold"
             />
           </span>

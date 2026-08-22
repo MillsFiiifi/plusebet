@@ -14,11 +14,14 @@ export function LiveClock({
   sport,
   fallbackMinute,
   className,
+  showHalf = false,
 }: {
   startTimeISO?: string;
   sport?: string;
   fallbackMinute?: number;
   className?: string;
+  /** Also print H1 / H2 beside the clock — which half is running. */
+  showHalf?: boolean;
 }) {
   // Only run the live clock after mount so server and first client render match
   // (the clock depends on the current time, which differs between them).
@@ -31,9 +34,19 @@ export function LiveClock({
   }, []);
 
   const fallback = fallbackMinute != null ? `${fallbackMinute}'` : "";
-  const label = mounted
-    ? liveClockLabel(startTimeISO, sport).label || fallback
-    : fallback;
+  const clock = mounted
+    ? liveClockLabel(startTimeISO, sport)
+    : { label: "", live: false, half: undefined };
+  const label = clock.label || fallback;
+  const half = showHalf ? clock.half : undefined;
 
-  return <span className={className}>{label}</span>;
+  if (!half) return <span className={className}>{label}</span>;
+  return (
+    <span className={className}>
+      {label}
+      <span className="ml-1 text-[8.5px] font-bold uppercase tracking-wide text-[var(--color-ink-faint)]">
+        {half}
+      </span>
+    </span>
+  );
 }
