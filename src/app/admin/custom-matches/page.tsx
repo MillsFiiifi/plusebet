@@ -50,6 +50,28 @@ const blankForm: CreateForm = {
   goals: [],
 }
 
+/**
+ * Read a JSON response, or fail with something an operator can act on.
+ *
+ * An unhandled throw in a route handler comes back as a 500 with a non-JSON
+ * body, and `res.json()` then reports the parse failure instead of the actual
+ * problem — on iOS Safari as "The string did not match the expected pattern",
+ * which sends whoever is running the admin looking in entirely the wrong place.
+ * Carry the status and whatever the body did say instead.
+ */
+async function readJson<T = Record<string, unknown>>(res: Response): Promise<T> {
+  const text = await res.text()
+  if (!text) {
+    if (res.ok) return {} as T
+    throw new Error(`HTTP ${res.status} — the server returned an empty response`)
+  }
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new Error(`HTTP ${res.status} — ${text.slice(0, 160)}`)
+  }
+}
+
 export default function AdminCustomMatchesPage() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,7 +88,7 @@ export default function AdminCustomMatchesPage() {
     try {
       const res = await fetch('/api/admin/custom-matches', { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = (await res.json()) as { matches: Match[] }
+      const data = await readJson<{ matches: Match[] }>(res)
       setMatches(data.matches)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -89,7 +111,9 @@ export default function AdminCustomMatchesPage() {
       const body = new FormData()
       body.append('file', file)
       const res = await fetch('/api/admin/upload-flag', { method: 'POST', body })
-      const data = await res.json().catch(() => ({}))
+      const data = await readJson<{ error?: string; url?: string; match?: Match }>(res).catch(
+        (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }),
+      )
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
       update(side === 'home' ? 'homeFlagUrl' : 'awayFlagUrl', data.url as string)
     } catch (e) {
@@ -136,7 +160,7 @@ export default function AdminCustomMatchesPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const data = await res.json()
+      const data = await readJson<{ error?: string; match: Match }>(res)
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
       setMatches((prev) => [data.match as Match, ...prev])
       setForm({ ...blankForm, sport: form.sport })
@@ -179,7 +203,9 @@ export default function AdminCustomMatchesPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(patch),
       })
-      const data = await res.json().catch(() => ({}))
+      const data = await readJson<{ error?: string; url?: string; match?: Match }>(res).catch(
+        (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }),
+      )
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
       setMatches((prev) =>
         prev.map((m) => (m.id === id ? { ...m, ...(data.match as Match) } : m)),
@@ -663,7 +689,9 @@ function ExistingMatchRow({ match, busy, onDelete, onPatch }: ExistingMatchRowPr
       const body = new FormData()
       body.append('file', file)
       const res = await fetch('/api/admin/upload-flag', { method: 'POST', body })
-      const data = await res.json().catch(() => ({}))
+      const data = await readJson<{ error?: string; url?: string; match?: Match }>(res).catch(
+        (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }),
+      )
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
       onPatch(side === 'home' ? { homeFlagUrl: data.url } : { awayFlagUrl: data.url })
     } catch {

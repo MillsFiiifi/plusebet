@@ -1,5 +1,5 @@
 import type { Match, MatchGoal } from '@/lib/domain-types'
-import { supabaseServer } from '@/lib/supabase'
+import { isMissingColumnError, supabaseServer } from '@/lib/supabase'
 import { liveClockLabel, matchMinuteFromKickoff, liveOddsForScore } from '@/lib/match-betting'
 
 interface CustomMatchRow {
@@ -236,10 +236,11 @@ export async function addCustomMatch(
     .select('*')
     .single()
   if (!error) return rowToMatch(data as CustomMatchRow)
-  // 42703 = undefined_column: this database predates migration 0025, which adds
-  // the BEST ODDS flag. Creating the fixture matters; the flag can wait.
-  if (error.code !== '42703') throw new Error(`customMatches.add: ${error.message}`)
-  const { boosted: _boosted, ...legacy } = row
+  // The database predates migration 0025, which adds the BEST ODDS flag.
+  // Creating the fixture matters; the flag can wait.
+  if (!isMissingColumnError(error)) throw new Error(`customMatches.add: ${error.message}`)
+  const legacy: Record<string, unknown> = { ...row }
+  delete legacy.boosted
   const { data: retryData, error: retryErr } = await supabaseServer()
     .from('custom_matches')
     .insert(legacy)

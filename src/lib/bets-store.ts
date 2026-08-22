@@ -1,6 +1,6 @@
 import { randomInt } from 'crypto'
 import type { BetSelection, Match, PlacedBet } from '@/lib/domain-types'
-import { supabaseServer } from '@/lib/supabase'
+import { isMissingColumnError, supabaseServer } from '@/lib/supabase'
 import { DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from '@/lib/countries'
 
 export type { PlacedBet }
@@ -208,14 +208,19 @@ export async function addBet(bet: PlacedBet): Promise<void> {
     }))
     const { error: selErr } = await supabaseServer().from('bet_selections').insert(rows)
     if (selErr) {
-      // 42703 = undefined_column: migration 0024 hasn't been run on this
-      // database yet. The parent bet row is already in, so failing here would
+      // Migration 0024 hasn't been run on this database yet. The parent bet
+      // row is already in, so failing here would
       // leave a ticket with no legs and a stake already taken. The match
       // context is a nicety; the ticket is the product — drop the former and
       // save the latter.
-      if (selErr.code !== '42703') throw new Error(`bet_selections.add: ${selErr.message}`)
+      if (!isMissingColumnError(selErr)) throw new Error(`bet_selections.add: ${selErr.message}`)
       console.warn('[bets] bet_selections is missing the 0024 columns — inserting without match context')
-      const legacy = rows.map(({ sport: _sport, kickoff: _kickoff, ...rest }) => rest)
+      const legacy = rows.map((row) => {
+        const copy: Record<string, unknown> = { ...row }
+        delete copy.sport
+        delete copy.kickoff
+        return copy
+      })
       const { error: retryErr } = await supabaseServer().from('bet_selections').insert(legacy)
       if (retryErr) throw new Error(`bet_selections.add: ${retryErr.message}`)
     }
@@ -330,7 +335,7 @@ export async function setSelectionStatusById(
   // Same fallback as the insert: on a database without migration 0024, record
   // the result and let the score go. A leg that settles without its score is
   // worth more than one that never settles.
-  if (error.code !== '42703') throw new Error(`bet_selections.setStatusById: ${error.message}`)
+  if (!isMissingColumnError(error)) throw new Error(`bet_selections.setStatusById: ${error.message}`)
   const { error: retryErr } = await supabaseServer()
     .from('bet_selections')
     .update({ status })

@@ -131,6 +131,14 @@ export async function POST(request: Request) {
       : { startTime: startLabel, startTimeISO: startISO }),
   }
 
-  const created = await addCustomMatch(match)
-  return NextResponse.json({ match: created }, { status: 201 })
+  // A throw here would leave Next to answer with a non-JSON 500, which the
+  // admin form can only report as a parse failure. Say what actually broke.
+  try {
+    const created = await addCustomMatch(match)
+    return NextResponse.json({ match: created }, { status: 201 })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    console.error('[admin/custom-matches] create failed:', message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }

@@ -32,6 +32,20 @@ export function supabaseServer(): SupabaseClient {
   return _server
 }
 
+/**
+ * Whether a write failed because the database is missing a column the code
+ * knows about — i.e. a migration hasn't been run yet.
+ *
+ * Two codes, because the same missing column is reported differently depending
+ * on who notices first: PostgREST rejects an INSERT or UPDATE against its own
+ * schema cache with PGRST204, while a SELECT reaches Postgres and comes back
+ * with 42703. A write path that only checks one of them will sail straight into
+ * the error it meant to handle.
+ */
+export function isMissingColumnError(error: { code?: string | null } | null): boolean {
+  return error?.code === 'PGRST204' || error?.code === '42703'
+}
+
 export function isSupabaseConfigured(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY,
