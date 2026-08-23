@@ -27,9 +27,9 @@ export async function GET(_req: Request, { params }: Params) {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#0b0b14',
+          backgroundColor: '#07120c',
           backgroundImage:
-            'radial-gradient(circle at 18% 8%, rgba(139,92,246,0.35), transparent 45%), radial-gradient(circle at 88% 92%, rgba(236,72,153,0.30), transparent 45%)',
+            'radial-gradient(circle at 18% 8%, rgba(0,226,122,0.30), transparent 45%), radial-gradient(circle at 88% 92%, rgba(0,135,63,0.34), transparent 45%)',
           padding: '56px',
           fontFamily: 'sans-serif',
           color: '#ffffff',
@@ -38,8 +38,8 @@ export async function GET(_req: Request, { params }: Params) {
         {/* brand */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', fontSize: 46, fontWeight: 800 }}>
-            <span>Pluse</span>
-            <span style={{ color: '#a78bfa' }}>bet</span>
+            <span>Bet</span>
+            <span style={{ color: '#00e27a' }}>lixx</span>
           </div>
           <div
             style={{
@@ -47,8 +47,8 @@ export async function GET(_req: Request, { params }: Params) {
               fontSize: 22,
               fontWeight: 700,
               letterSpacing: 2,
-              color: '#22d3ee',
-              border: '2px solid rgba(34,211,238,0.4)',
+              color: '#00e27a',
+              border: '2px solid rgba(0,226,122,0.4)',
               borderRadius: 999,
               padding: '8px 20px',
             }}
@@ -69,7 +69,7 @@ export async function GET(_req: Request, { params }: Params) {
               fontWeight: 800,
               letterSpacing: 8,
               lineHeight: 1.05,
-              backgroundImage: 'linear-gradient(90deg, #a78bfa, #ec4899)',
+              backgroundImage: 'linear-gradient(90deg, #00e27a, #7ef0b4)',
               backgroundClip: 'text',
               color: 'transparent',
             }}
@@ -95,11 +95,11 @@ export async function GET(_req: Request, { params }: Params) {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', fontSize: 30, fontWeight: 700 }}>{s.match}</div>
-                <div style={{ display: 'flex', fontSize: 30, fontWeight: 800, color: '#22d3ee' }}>
+                <div style={{ display: 'flex', fontSize: 30, fontWeight: 800, color: '#00e27a' }}>
                   {Number(s.odds).toFixed(2)}
                 </div>
               </div>
-              <div style={{ display: 'flex', fontSize: 23, color: '#c4b5fd', marginTop: 4 }}>
+              <div style={{ display: 'flex', fontSize: 23, color: '#a7e8c4', marginTop: 4 }}>
                 {s.pick}
                 <span style={{ color: '#6b7280', marginLeft: 10 }}>· {s.market}</span>
               </div>

@@ -61,7 +61,7 @@ function LoginForm() {
           </Link>
           <Link href="/" className="flex items-center" aria-label="Betlixx home">
             <span className="font-display font-extrabold tracking-tight text-lg leading-none">
-              Pluse<span className="text-primary">bet</span>
+              Bet<span className="text-primary">lixx</span>
             </span>
           </Link>
         </div>

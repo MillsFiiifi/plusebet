@@ -126,7 +126,7 @@ export function MatchAdvert() {
         <div className="relative flex items-center justify-between px-4 pt-4">
           <span className="flex items-center gap-1.5 rounded-lg border border-[var(--color-amber)]/40 bg-black/40 px-2.5 py-1">
             <span className="font-display font-extrabold text-[13px] tracking-tight">
-              PLUSE<span className="grad-text">BET</span>
+              BET<span className="grad-text">LIXX</span>
             </span>
           </span>
           <button
