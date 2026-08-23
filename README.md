@@ -1,7 +1,8 @@
-# NexxtWin — UI Redesign
+# Betlixx
 
-A modern, full rebuild of the [nexxtwin.com](https://nexxtwin.com) premium sports-betting
-platform, focused on an elevated, polished UI.
+The [betlixx.com](https://betlixx.com) sports-betting platform: fixtures and live
+odds, mobile-money deposits and payouts, an admin for running the book, and a
+sub-admin referral programme.
 
 **Stack:** Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · TypeScript · Zustand · lucide-react
 
