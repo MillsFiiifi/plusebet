@@ -396,6 +396,9 @@ function PaymentModal({
   const [phone, setPhone] = useState(user.phone ?? "");
   const [network, setNetwork] = useState<(typeof NETWORKS)[number]["id"]>("mtn");
   const [busy, setBusy] = useState(false);
+  // Set when a withdrawal bounced off the deposit gate: flags the requirement
+  // line rather than stacking a second, contradictory message under it.
+  const [gateNudge, setGateNudge] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -782,7 +785,15 @@ function PaymentModal({
       const data = await res.json();
       // 202 = received & pending operator processing — still a success to the user.
       if (res.status === 202) { setDone(true); onSuccess(); return; }
-      if (!res.ok) { setError(data.error ?? "Withdrawal failed."); return; }
+      if (!res.ok) {
+        // The amber line above already states the requirement in the app's own
+        // terms. Repeating the server's wording under it in red gives the player
+        // two different numbers for the same rule whenever the two disagree —
+        // which is exactly when they're most confused. Nudge the one line.
+        if (data.verificationRequired && gateUnmet) { setError(null); setGateNudge(true); return; }
+        setError(data.error ?? "Withdrawal failed.");
+        return;
+      }
       setDone(true);
       onSuccess();
     } catch {
@@ -1081,10 +1092,28 @@ function PaymentModal({
             )}
 
             {type === "withdraw" && gateUnmet && (
-              <p className="text-[11.5px] text-[var(--color-amber)]">
+              <p
+                className={cn(
+                  "text-[11.5px] text-[var(--color-amber)] transition-all",
+                  gateNudge &&
+                    "font-semibold rounded-lg border border-[var(--color-amber)]/35 bg-[var(--color-amber)]/10 px-3 py-2 animate-rise",
+                )}
+              >
                 Withdrawals unlock after {requiredDeposits} deposits of{" "}
                 <span className="num font-bold">{money(qualifyDeposit)}</span> or more — you&apos;ve made{" "}
                 <span className="num font-bold">{madeDeposits}</span> of {requiredDeposits}.
+                {gateNudge && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      onClick={() => onSwitchToDeposit?.()}
+                      className="font-bold underline hover:no-underline"
+                    >
+                      Deposit now
+                    </button>
+                  </>
+                )}
               </p>
             )}
 
