@@ -225,6 +225,41 @@ export async function mergePaymentMetadata(
 }
 
 /**
+ * Flip a still-pending row to `failed` and record why, so a charge that never
+ * got off the ground stops looking like a live deposit in the admin views.
+ * Guarded on `pending` at the Postgres level, so it can never overwrite a row
+ * another path already credited. Returns null if the row was already resolved
+ * or doesn't exist.
+ *
+ * A `failed` row is NOT the end of the line: the reconcile sweeps re-check
+ * these too, so a charge that did reach the gateway despite our error still
+ * credits on a later pass.
+ */
+export async function markPaymentFailed(
+  reference: string,
+  reason: string,
+): Promise<PaymentRecord | null> {
+  const existing = await findPaymentByReference(reference)
+  if (!existing) return null
+  const { data, error } = await supabaseServer()
+    .from('payments')
+    .update({
+      status: 'failed',
+      metadata: {
+        ...existing.metadata,
+        failureReason: reason,
+        failedAt: new Date().toISOString(),
+      },
+    })
+    .eq('reference', reference)
+    .eq('status', 'pending')
+    .select('*')
+    .maybeSingle()
+  if (error) throw new Error(`payments.markFailed: ${error.message}`)
+  return data ? rowToRecord(data as PaymentRow) : null
+}
+
+/**
  * Atomically flip a non-success payment row to success and stamp who
  * resolved it. The `.in('status', …)` filter means only ONE concurrent
  * caller wins — if the row is already success, no rows are updated and

@@ -29,11 +29,16 @@ export async function POST(request: Request) {
   }
 
   const cutoff = Date.now() - 2 * 60 * 60 * 1000
+  // `failed` is swept alongside `pending`: a start that errored after
+  // Flutterwave had already created the charge (timeout, unparseable reply)
+  // leaves a failed row for a payment the customer may still have approved.
+  // Re-verifying is idempotent and cheap at this cutoff, and never
+  // double-credits — markPaymentResolved is the atomic gate.
   const pending = payments.filter(
     (p) =>
       p.type === 'deposit' &&
       p.provider === 'flutterwave' &&
-      p.status === 'pending' &&
+      (p.status === 'pending' || p.status === 'failed') &&
       new Date(p.createdAt).getTime() >= cutoff,
   )
 

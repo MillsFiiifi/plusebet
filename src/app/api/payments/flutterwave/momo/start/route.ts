@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { findUserById } from '@/lib/users-store'
-import { recordPayment, mergePaymentMetadata } from '@/lib/payments-store'
+import { recordPayment, mergePaymentMetadata, markPaymentFailed } from '@/lib/payments-store'
 import { chargeMobileMoneyGhana, type GhanaMomoNetwork } from '@/lib/flutterwave'
 import { getMinFirstDeposit } from '@/lib/countries'
 
@@ -120,9 +120,14 @@ export async function POST(request: Request) {
     )
   } catch (e) {
     console.error('[flutterwave/momo/start] charge failed:', e)
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'flutterwave charge failed' },
-      { status: 502 },
+    const reason = e instanceof Error ? e.message : 'flutterwave charge failed'
+    // The pending row above was written before we knew the charge would fail.
+    // Retire it so it doesn't linger as a live deposit — the reconcile sweep
+    // still re-checks failed rows, so a charge that did land despite this
+    // error is not stranded.
+    await markPaymentFailed(txRef, reason).catch((err) =>
+      console.error('[flutterwave/momo/start] pending row cleanup failed:', err),
     )
+    return NextResponse.json({ error: reason }, { status: 502 })
   }
 }
