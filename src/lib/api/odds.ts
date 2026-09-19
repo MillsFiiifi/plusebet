@@ -206,6 +206,24 @@ async function apiFetch<T>(
   return json
 }
 
+/**
+ * How many days of fixtures to pull, counting today. The public homepage has
+ * Today / Tomorrow / This Week sections, so anything less than 7 leaves the
+ * later two permanently empty — we simply never asked the provider for those
+ * days. Each extra day costs one /fixtures call plus one /odds call per league
+ * playing that day, all cached 30 min, which is negligible against the plan.
+ */
+const FIXTURE_HORIZON_DAYS = 7
+
+/** UTC calendar dates from today forward — the form /fixtures?date= expects. */
+function horizonDates(days: number): string[] {
+  const out: string[] = []
+  for (let i = 0; i < days; i++) {
+    out.push(new Date(Date.now() + i * 86_400_000).toISOString().slice(0, 10))
+  }
+  return out
+}
+
 async function fetchFixturesByDate(date: string, apiKey: string): Promise<Fixture[]> {
   // Pre-match fixtures barely change during the day — cache 30 min to spare the
   // (free-tier) request quota.
@@ -495,15 +513,19 @@ export async function getMatchesForSport(sport: string): Promise<Match[]> {
   const apiKey = process.env.API_FOOTBALL_KEY
   if (!apiKey) throw new Error('API_FOOTBALL_KEY missing')
 
-  const today = new Date().toISOString().slice(0, 10)
+  const dates = horizonDates(FIXTURE_HORIZON_DAYS)
 
-  const [fixturesToday, fixturesLive] = await Promise.all([
-    fetchFixturesByDate(today, apiKey),
+  // One /fixtures call per day in the horizon. A day the provider has nothing
+  // for just resolves empty, so a failed or bare day never blanks the rest.
+  const [fixtureDays, fixturesLive] = await Promise.all([
+    Promise.all(dates.map((d) => fetchFixturesByDate(d, apiKey))),
     fetchLiveFixtures(apiKey),
   ])
 
   const byId = new Map<number, Fixture>()
-  for (const f of fixturesToday) byId.set(f.fixture.id, f)
+  for (const day of fixtureDays) {
+    for (const f of day) byId.set(f.fixture.id, f)
+  }
   // Live fixtures take precedence — they carry the fresher elapsed minute.
   for (const f of fixturesLive) byId.set(f.fixture.id, f)
 
@@ -523,19 +545,29 @@ export async function getMatchesForSport(sport: string): Promise<Match[]> {
   // Pre-match odds still fetched per league+season — keeps the upstream call
   // count bounded by the whitelist size. Live odds fetched globally in one
   // call so we don't have to walk every live league individually.
-  const preMatchKeys = new Map<string, { leagueId: number; season: number }>()
+  // Keyed by date as well as league+season: /odds is a per-date endpoint, so
+  // asking only for today returns nothing for a fixture playing tomorrow, and
+  // the no-odds filter at the end would then drop every future match we just
+  // fetched. One key per league+season+day the league actually plays.
+  const preMatchKeys = new Map<
+    string,
+    { leagueId: number; season: number; date: string }
+  >()
   for (const f of fixtures) {
     if (!WHITELISTED_LEAGUE_IDS.has(f.league.id)) continue
-    preMatchKeys.set(`${f.league.id}:${f.league.season}`, {
+    const date = (f.fixture.date ?? '').slice(0, 10)
+    if (!date) continue
+    preMatchKeys.set(`${f.league.id}:${f.league.season}:${date}`, {
       leagueId: f.league.id,
       season: f.league.season,
+      date,
     })
   }
 
   const [preMatchResults, liveOdds] = await Promise.all([
     Promise.allSettled(
       [...preMatchKeys.values()].map((k) =>
-        fetchOddsForLeague(k.leagueId, k.season, today, apiKey),
+        fetchOddsForLeague(k.leagueId, k.season, k.date, apiKey),
       ),
     ),
     fetchLiveOdds(apiKey).catch(() => [] as OddsRow[]),

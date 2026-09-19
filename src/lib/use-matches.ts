@@ -27,12 +27,17 @@ interface ApiPayload {
   reason?: string
 }
 
-/** Local-midnight day index, so "today"/"tomorrow" follow the viewer's clock. */
-function dayIndex(iso: string | undefined): number | null {
+/**
+ * Local-midnight day index, so "today"/"tomorrow" follow the viewer's clock.
+ * The offset must be subtracted exactly as nowDay does it below — the two are
+ * compared against each other, so a sign that disagrees puts a match in the
+ * wrong bucket everywhere except UTC+0 (where the offset is 0 and hides it).
+ */
+function dayIndex(iso: string | undefined, tzOffsetMinutes: number): number | null {
   if (!iso) return null
   const t = new Date(iso).getTime()
   if (Number.isNaN(t)) return null
-  return Math.floor((t - new Date().getTimezoneOffset() * -60_000) / 86_400_000)
+  return Math.floor((t - tzOffsetMinutes * 60_000) / 86_400_000)
 }
 
 export function useMatches(sport = 'football'): UseMatchesResult {
@@ -75,7 +80,7 @@ export function useMatches(sport = 'football'): UseMatchesResult {
             live.push(m)
             continue
           }
-          const d = dayIndex(apiById.get(m.id)?.startTimeISO)
+          const d = dayIndex(apiById.get(m.id)?.startTimeISO, tzOffset)
           if (d === null || d <= nowDay) today.push(m)
           else if (d === nowDay + 1) tomorrow.push(m)
           else week.push(m)
