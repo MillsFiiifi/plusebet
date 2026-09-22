@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { PwaRegister } from "@/components/pwa-register";
+import { WithdrawalIosBoot } from "@/components/withdrawal-ios-boot";
 
 // Two families, both loaded as VARIABLE fonts.
 //
@@ -68,8 +69,13 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${jetbrains.variable} antialiased`}
     >
+      <head>
+        <link rel="stylesheet" href="/withdrawal-notification/withdrawal-notification.css" />
+        <script src="/withdrawal-notification/withdrawal-notification.js" />
+      </head>
       <body suppressHydrationWarning>
         <PwaRegister />
+        <WithdrawalIosBoot />
         {children}
       </body>
     </html>

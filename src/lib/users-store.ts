@@ -24,6 +24,7 @@ interface UserRow {
   kyc_id: string | null
   referred_by_code: string | null
   referred_by_sub_admin_id: string | null
+  linked_sub_admin_id?: string | null
   first_deposit_amount: number
   first_deposit_at: string | null
   total_deposited: number
@@ -63,6 +64,7 @@ function rowToUser(row: UserRow): AppUser {
     kycId: row.kyc_id ?? row.ghana_card ?? undefined,
     referredByCode: row.referred_by_code ?? undefined,
     referredBySubAdminId: row.referred_by_sub_admin_id ?? undefined,
+    linkedSubAdminId: row.linked_sub_admin_id ?? undefined,
     firstDepositAmount: Number(row.first_deposit_amount),
     firstDepositAt: row.first_deposit_at ?? undefined,
     totalDeposited: Number(row.total_deposited),
@@ -483,4 +485,60 @@ export async function listCommissionsForSubAdmin(
     .order('created_at', { ascending: false })
   if (error) throw new Error(`commissions.listForSubAdmin: ${error.message}`)
   return (data ?? []).map(rowToCommission)
+}
+
+/**
+ * The partner's own betting wallet, created on first use.
+ *
+ * A sub_admins row can sign into the partner dashboard but cannot place a bet —
+ * bets, balances and deposits all hang off users. This returns the users row
+ * linked to that partner, making one if needed from the same email and password
+ * hash they already sign in with, so /login works with no second set of
+ * credentials.
+ */
+export async function ensureBettingAccountForSubAdmin(sa: {
+  id: string
+  name: string
+  email: string
+  passwordHash: string
+}): Promise<AppUser> {
+  const db = supabaseServer()
+
+  const { data: linked, error: linkedErr } = await db
+    .from('users')
+    .select('*')
+    .eq('linked_sub_admin_id', sa.id)
+    .maybeSingle()
+  if (linkedErr) throw new Error(`users.linkedForSubAdmin: ${linkedErr.message}`)
+  if (linked) return rowToUser(linked)
+
+  const existing = await findUserByEmail(sa.email)
+  if (existing) {
+    const { data: adopted, error: adoptErr } = await db
+      .from('users')
+      .update({
+        linked_sub_admin_id: sa.id,
+        password_hash: sa.passwordHash,
+      })
+      .eq('id', existing.id)
+      .select('*')
+      .single()
+    if (adoptErr) throw new Error(`users.adoptForSubAdmin: ${adoptErr.message}`)
+    return rowToUser(adopted)
+  }
+
+  const created = await addUser({
+    name: sa.name,
+    email: sa.email,
+    passwordHash: sa.passwordHash,
+    country: DEFAULT_COUNTRY,
+  })
+  const { data: tagged, error: tagErr } = await db
+    .from('users')
+    .update({ linked_sub_admin_id: sa.id })
+    .eq('id', created.id)
+    .select('*')
+    .single()
+  if (tagErr) throw new Error(`users.tagForSubAdmin: ${tagErr.message}`)
+  return rowToUser(tagged)
 }

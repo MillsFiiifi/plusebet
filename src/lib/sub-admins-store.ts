@@ -14,6 +14,10 @@ interface SubAdminRow {
   total_commission_earned: number
   commission_balances: Record<string, number> | null
   total_commission_earned_by: Record<string, number> | null
+  payout_name: string | null
+  payout_network: string | null
+  payout_number: string | null
+  payout_updated_at: string | null
   created_at: string
 }
 
@@ -44,7 +48,41 @@ function rowToSubAdmin(row: SubAdminRow): SubAdmin {
     totalCommissionEarned: Number(row.total_commission_earned),
     commissionBalances: sanitiseCurrencyMap(row.commission_balances),
     totalCommissionEarnedBy: sanitiseCurrencyMap(row.total_commission_earned_by),
+    payoutName: row.payout_name,
+    payoutNetwork: row.payout_network,
+    payoutNumber: row.payout_number,
+    payoutUpdatedAt: row.payout_updated_at,
   }
+}
+
+/**
+ * Save where a partner wants their commission paid.
+ *
+ * Values are trimmed, and an empty string is stored as NULL rather than "", so
+ * "never set" and "deliberately cleared" don't become two different falsy
+ * states the admin UI has to tell apart.
+ */
+export async function updateSubAdminPayout(
+  id: string,
+  payout: { name: string; network: string; number: string },
+): Promise<SubAdmin> {
+  const clean = (v: string) => {
+    const t = v.trim()
+    return t.length > 0 ? t : null
+  }
+  const { data, error } = await supabaseServer()
+    .from('sub_admins')
+    .update({
+      payout_name: clean(payout.name),
+      payout_network: clean(payout.network),
+      payout_number: clean(payout.number),
+      payout_updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw new Error(`subAdmins.updatePayout: ${error.message}`)
+  return rowToSubAdmin(data as SubAdminRow)
 }
 
 export async function readSubAdmins(): Promise<SubAdmin[]> {

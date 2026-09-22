@@ -198,7 +198,13 @@ export async function POST(request: Request) {
       (typeof payoutMeta.phone === 'string' && payoutMeta.phone) || user.phone || '',
     )
     return NextResponse.json(
-      { message: PROCESSING_MESSAGE, pending: true },
+      {
+        message: PROCESSING_MESSAGE,
+        pending: true,
+        amount: +amount.toFixed(2),
+        new_balance: user.balance ?? 0,
+        currency: user.currency,
+      },
       { status: 202 },
     )
   }
@@ -241,6 +247,9 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     {
+      amount: +amount.toFixed(2),
+      new_balance: result.user.balance ?? 0,
+      currency: result.user.currency,
       user: {
         id: result.user.id,
         name: result.user.name,

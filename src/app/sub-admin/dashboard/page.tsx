@@ -11,11 +11,16 @@ import {
   Users,
   Wallet,
   AlertTriangle,
+  ChevronDown,
+  Landmark,
+  Search,
+  Share2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Brand } from '@/components/brand'
 import { formatMoney } from '@/lib/format-money'
 import { COMMISSION_RATE } from '@/lib/domain-types'
+import { SubAdminBettingAccount } from '@/components/sub-admin-betting-account'
 
 /** "GHS 12.34 · NGN 5,000.00" — single-line summary of a currency map. */
 function formatCurrencyMap(map: Record<string, number> | undefined): string {
@@ -37,6 +42,10 @@ interface MeResponse {
     commissionBalances: Record<string, number>
     totalCommissionEarnedBy: Record<string, number>
     createdAt: string
+    payoutName: string | null
+    payoutNetwork: string | null
+    payoutNumber: string | null
+    payoutUpdatedAt: string | null
   }
   stats: {
     referrals: number
@@ -65,11 +74,155 @@ interface MeResponse {
   }[]
 }
 
+/**
+ * Collapsible section. The partner dashboard is a long single column on a
+ * phone, and the sections below the fold (payout details, the referred-user
+ * list) are reference material rather than things you read every visit —
+ * collapsing them keeps the code and the day's earnings reachable without
+ * scrolling past everything else.
+ */
+function Collapsible({
+  icon,
+  title,
+  count,
+  defaultOpen = false,
+  children,
+}: {
+  icon: React.ReactNode
+  title: string
+  count?: number
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <section className="bg-card border border-border rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2.5 px-4 py-3.5 text-left hover:bg-secondary/40 transition-colors"
+      >
+        {icon}
+        <span className="font-semibold text-sm">{title}</span>
+        {count !== undefined && (
+          <span className="text-sm text-muted-foreground tabular-nums">({count})</span>
+        )}
+        <ChevronDown
+          className={`w-4 h-4 ml-auto shrink-0 text-muted-foreground transition-transform ${
+            open ? '' : '-rotate-90'
+          }`}
+        />
+      </button>
+      {open && <div className="border-t border-border">{children}</div>}
+    </section>
+  )
+}
+
+/**
+ * Where the admin should send this partner's commission.
+ *
+ * Saved separately from the rest of the dashboard, which is read-only and
+ * polls every 30s — folding these inputs into that refresh would overwrite
+ * whatever the partner was mid-way through typing.
+ */
+function PayoutDetails({
+  initial,
+  onSaved,
+}: {
+  initial: { name: string; network: string; number: string; updatedAt: string | null }
+  onSaved: () => void
+}) {
+  const [name, setName] = useState(initial.name)
+  const [network, setNetwork] = useState(initial.network)
+  const [number, setNumber] = useState(initial.number)
+  const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const dirty =
+    name !== initial.name || network !== initial.network || number !== initial.number
+
+  const save = async () => {
+    setBusy(true)
+    setErr(null)
+    try {
+      const res = await fetch('/api/sub-admin/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payoutName: name,
+          payoutNetwork: network,
+          payoutNumber: number,
+        }),
+      })
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        setErr(body.error ?? 'Could not save. Please try again.')
+        return
+      }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+      onSaved()
+    } catch {
+      setErr('Network error — please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const field = (
+    label: string,
+    value: string,
+    set: (v: string) => void,
+    placeholder: string,
+    inputMode?: 'numeric',
+  ) => (
+    <label className="block">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => set(e.target.value)}
+        placeholder={placeholder}
+        inputMode={inputMode}
+        maxLength={120}
+        className="mt-1 w-full px-3 py-2.5 bg-secondary border border-border rounded-md text-sm outline-none focus:border-primary transition-colors"
+      />
+    </label>
+  )
+
+  return (
+    <div className="p-4 space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Set where admin should send your commissions.
+      </p>
+      {field('Account Name', name, setName, 'John Doe')}
+      {field('Network / Bank', network, setNetwork, 'MTN')}
+      {field('Account Number', number, setNumber, '024 000 0000', 'numeric')}
+
+      {err && <p className="text-xs text-destructive">{err}</p>}
+
+      <div className="flex items-center gap-3">
+        <Button onClick={() => void save()} disabled={busy || !dirty} size="sm">
+          {busy && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />}
+          {saved ? 'Saved' : 'Save details'}
+        </Button>
+        {initial.updatedAt && !dirty && (
+          <span className="text-[11px] text-muted-foreground">
+            Updated {new Date(initial.updatedAt).toLocaleDateString()}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function SubAdminDashboardPage() {
   const router = useRouter()
   const [data, setData] = useState<MeResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<'code' | 'link' | null>(null)
+  const [query, setQuery] = useState('')
 
   const load = async () => {
     try {
@@ -108,6 +261,29 @@ export default function SubAdminDashboardPage() {
     }
   }
 
+  /**
+   * Hand the link to the OS share sheet, which is how a partner actually
+   * distributes it — straight into WhatsApp or Telegram rather than via the
+   * clipboard. Falls back to copying on desktop, where share() is usually
+   * absent, so the button always does something useful.
+   */
+  const share = async (link: string) => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Betlixx',
+          text: `Join Betlixx with my code ${data?.subAdmin.referralCode ?? ''}`,
+          url: link,
+        })
+        return
+      } catch {
+        // Share sheet dismissed — fall through to copy rather than doing
+        // nothing, so a cancelled share still leaves the link in hand.
+      }
+    }
+    await copy(link, 'link')
+  }
+
   if (error) {
     return (
       <div className="min-h-screen bg-background p-6">
@@ -129,6 +305,12 @@ export default function SubAdminDashboardPage() {
   const sa = data.subAdmin
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const referralLink = `${origin}/register?ref=${sa.referralCode}`
+  const q = query.trim().toLowerCase()
+  const visibleUsers = q
+    ? data.referredUsers.filter(
+        (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+      )
+    : data.referredUsers
 
   // Sum commissions whose createdAt falls in the current local day.
   const todayStart = new Date()
@@ -209,71 +391,57 @@ export default function SubAdminDashboardPage() {
           </div>
         )}
 
-        {/* Referral code + link */}
-        <section className="bg-card border border-border rounded-xl p-4 sm:p-6">
-          <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-                Your referral code
-              </p>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="font-mono text-3xl font-bold tracking-widest text-primary">
-                  {sa.referralCode}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void copy(sa.referralCode, 'code')}
-                  className="h-8 gap-1.5"
-                >
-                  {copied === 'code' ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-success" />
-                      <span className="text-success">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy code</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Earn <b>{Math.round(COMMISSION_RATE * 100)}%</b> commission on every deposit from each referred user.
-              </p>
-            </div>
-            <div className="flex-1 lg:max-w-md">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">
-                Share this link
-              </p>
-              <div className="flex gap-2">
-                <input
-                  readOnly
-                  value={referralLink}
-                  className="flex-1 px-3 py-2 bg-secondary border border-border rounded-md text-xs font-mono truncate"
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void copy(referralLink, 'link')}
-                  className="h-9 gap-1.5"
-                >
-                  {copied === 'link' ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-success" />
-                      <span className="hidden sm:inline text-success">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Copy link</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+        {/* Share your code — the reason a partner opens this page at all, so it
+            leads and the code itself is the largest thing on the screen. */}
+        <section className="bg-card border border-border rounded-xl p-4 sm:p-5">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+            Share your code
+          </p>
+          <div className="flex items-center gap-3 mt-1.5">
+            <p className="font-mono text-4xl sm:text-5xl font-bold tracking-widest text-primary leading-none">
+              {sa.referralCode}
+            </p>
+            <Button
+              size="sm"
+              onClick={() => void copy(sa.referralCode, 'code')}
+              className="ml-auto shrink-0 gap-1.5"
+            >
+              {copied === 'code' ? (
+                <>
+                  <Check className="w-3.5 h-3.5" /> Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" /> Copy
+                </>
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Earn <b>{Math.round(COMMISSION_RATE * 100)}%</b> on every deposit from
+            referred users.
+          </p>
+
+          <div className="flex gap-2 mt-3">
+            <input
+              readOnly
+              value={referralLink}
+              onFocus={(e) => e.currentTarget.select()}
+              aria-label="Your referral link"
+              className="flex-1 min-w-0 px-3 py-2.5 bg-secondary border border-border rounded-md text-xs font-mono truncate"
+            />
+            <Button
+              size="sm"
+              onClick={() => void share(referralLink)}
+              aria-label="Share referral link"
+              className="shrink-0 h-auto px-3.5"
+            >
+              {copied === 'link' ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <Share2 className="w-4 h-4" />
+              )}
+            </Button>
           </div>
         </section>
 
@@ -293,6 +461,26 @@ export default function SubAdminDashboardPage() {
             tone="good"
           />
         </section>
+
+        {sa.approved && <SubAdminBettingAccount />}
+
+        {/* Payout details — collapsed by default; a partner sets this once and
+            then rarely returns to it. */}
+        <Collapsible
+          icon={<Landmark className="w-4 h-4 text-muted-foreground" />}
+          title="Payout Details"
+          defaultOpen={!sa.payoutNumber}
+        >
+          <PayoutDetails
+            initial={{
+              name: sa.payoutName ?? '',
+              network: sa.payoutNetwork ?? '',
+              number: sa.payoutNumber ?? '',
+              updatedAt: sa.payoutUpdatedAt,
+            }}
+            onSaved={() => void load()}
+          />
+        </Collapsible>
 
         {/* Daily earnings history */}
         <section className="bg-card border border-border rounded-xl overflow-hidden">
@@ -336,20 +524,39 @@ export default function SubAdminDashboardPage() {
           )}
         </section>
 
-        {/* Referred users table */}
-        <section className="bg-card border border-border rounded-xl overflow-hidden">
-          <header className="px-4 py-3 border-b border-border">
-            <h2 className="font-semibold">Referred users ({data.referredUsers.length})</h2>
-            <p className="text-xs text-muted-foreground">
-              Users who registered with your code. Commission fires on every deposit they make.
-            </p>
-          </header>
+        {/* Referred users */}
+        <Collapsible
+          icon={<Users className="w-4 h-4 text-muted-foreground" />}
+          title="Referred Users"
+          count={data.referredUsers.length}
+          defaultOpen
+        >
           {data.referredUsers.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">
               No referrals yet. Share your code or link to get started.
             </p>
           ) : (
             <>
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mr-auto">
+                  Referred users
+                </p>
+                <div className="relative w-full max-w-[220px]">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search user…"
+                    aria-label="Search referred users"
+                    className="w-full pl-8 pr-3 py-2 bg-secondary border border-border rounded-md text-xs outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+              </div>
+              {visibleUsers.length === 0 && (
+                <p className="p-6 text-center text-sm text-muted-foreground">
+                  No user matches “{query}”.
+                </p>
+              )}
               <div className="hidden md:grid grid-cols-[1fr_180px_120px_120px_120px] gap-3 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground border-b border-border bg-secondary/40">
                 <span>User</span>
                 <span>Signed up</span>
@@ -358,7 +565,7 @@ export default function SubAdminDashboardPage() {
                 <span className="text-right">Today&apos;s commission</span>
               </div>
               <ul className="divide-y divide-border">
-                {data.referredUsers.map((u) => {
+                {visibleUsers.map((u) => {
                   const userCommissions = data.commissions.filter(
                     (c) => c.userId === u.id && new Date(c.createdAt) >= todayStart,
                   )
@@ -407,7 +614,7 @@ export default function SubAdminDashboardPage() {
               </ul>
             </>
           )}
-        </section>
+        </Collapsible>
       </main>
     </div>
   )

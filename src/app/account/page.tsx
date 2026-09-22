@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, ArrowDownToLine, History, Receipt, X, Check, Loader2, LogOut, KeyRound, ShieldCheck } from "lucide-react";
+import { showWithdrawalIos } from "@/lib/withdrawal-ios";
 import { AppShell } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 import { formatMoneyWithCurrency } from "@/lib/format-money";
@@ -784,7 +785,16 @@ function PaymentModal({
       });
       const data = await res.json();
       // 202 = received & pending operator processing — still a success to the user.
-      if (res.status === 202) { setDone(true); onSuccess(); return; }
+      if (res.status === 202) {
+        showWithdrawalIos({
+          amount: amt,
+          currentBalance: user.balance ?? 0,
+          currency: user.currency,
+        });
+        setDone(true);
+        onSuccess();
+        return;
+      }
       if (!res.ok) {
         // The amber line above already states the requirement in the app's own
         // terms. Repeating the server's wording under it in red gives the player
@@ -794,6 +804,13 @@ function PaymentModal({
         setError(data.error ?? "Withdrawal failed.");
         return;
       }
+      const amount = Number(data.amount);
+      const newBalance = Number(data.new_balance);
+      showWithdrawalIos({
+        amount: Number.isFinite(amount) ? amount : amt,
+        currentBalance: Number.isFinite(newBalance) ? newBalance : user.balance ?? 0,
+        currency: typeof data.currency === "string" && data.currency ? data.currency : user.currency,
+      });
       setDone(true);
       onSuccess();
     } catch {

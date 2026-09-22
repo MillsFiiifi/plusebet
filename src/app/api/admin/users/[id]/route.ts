@@ -86,7 +86,26 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!user) return NextResponse.json({ error: 'user not found' }, { status: 404 })
 
   if (body.withdrawalApproved && !wasApproved) {
+    const payments = await listPaymentsForUser(id)
+    const pending = payments.find(
+      (p) => p.type === 'withdrawal' && p.status === 'pending',
+    )
     await notifyWithdrawalApproved(id)
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        verificationStep: user.verificationStep ?? 0,
+        withdrawalApproved: user.withdrawalApproved ?? false,
+        balance: user.balance ?? 0,
+      },
+      notice: {
+        amount: pending?.amount ?? 0,
+        currentBalance: user.balance ?? 0,
+        currency: pending?.currency || user.currency,
+      },
+    })
   }
 
   return NextResponse.json({

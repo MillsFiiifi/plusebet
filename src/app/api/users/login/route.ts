@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { findUserByEmail, findUserByPhone } from '@/lib/users-store'
+import { ensureBettingAccountForSubAdmin, findUserByEmail, findUserByPhone } from '@/lib/users-store'
+import { findSubAdminByEmail } from '@/lib/sub-admins-store'
 import { verifyPassword } from '@/lib/password'
 
 export const dynamic = 'force-dynamic'
@@ -50,7 +51,33 @@ export async function POST(request: Request) {
     user = await findUserByEmail(raw.toLowerCase())
   }
 
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  const passwordOk = user ? verifyPassword(password, user.passwordHash) : false
+  if (!passwordOk) {
+    const sa = await findSubAdminByEmail(raw.toLowerCase())
+    if (sa?.approved && verifyPassword(password, sa.passwordHash)) {
+      try {
+        user = await ensureBettingAccountForSubAdmin({
+          id: sa.id,
+          name: sa.name,
+          email: sa.email,
+          passwordHash: sa.passwordHash,
+        })
+      } catch (e) {
+        console.error('[login] partner betting account', e)
+        return NextResponse.json(
+          { error: 'Could not open your betting account. Please try again.' },
+          { status: 500 },
+        )
+      }
+    } else {
+      return NextResponse.json(
+        { error: 'invalid email/phone or password' },
+        { status: 401 },
+      )
+    }
+  }
+
+  if (!user) {
     return NextResponse.json(
       { error: 'invalid email/phone or password' },
       { status: 401 },
