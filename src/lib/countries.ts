@@ -10,7 +10,7 @@ export type CountryCode =
 export type CurrencyCode =
   | 'GHS' | 'NGN' | 'KES' | 'ZAR'
   | 'UGX' | 'TZS' | 'XAF' | 'ZMW' | 'USD' | 'GBP' | 'XOF' | 'RWF'
-export type Gateway = 'moolre' | 'paystack' | 'korapay' | 'flutterwave' | 'manual'
+export type Gateway = 'moolre' | 'paystack' | 'korapay' | 'alphapay' | 'manual'
 
 export interface PayoutNetwork {
   key: string
@@ -86,7 +86,7 @@ const COUNTRIES: Record<CountryCode, CountryConfig> = {
     // deposit doesn't count for three. Replaces the old GHS 848 lifetime total.
     // Deposits of GHS 200 are still allowed, they just don't count toward it.
     withdrawQualifyDepositAmount: 300,
-    gateway: 'flutterwave',
+    gateway: 'alphapay',
     payoutTarget: 'mobile',
     // Keys match the withdraw form's network ids (mtn/vod/atl) so all three
     // validate, not just MTN.
@@ -113,7 +113,9 @@ const COUNTRIES: Record<CountryCode, CountryConfig> = {
     // Cumulative deposits a player must reach before withdrawals unlock —
     // the NGN equivalent of Ghana's 848 GHS qualifying total.
     withdrawQualifyTotal: 83571.79,
-    gateway: 'flutterwave',
+    // AlphaPay settles GHS only and the Korapay merchant is deactivated, so
+    // Nigeria uses the manual agent-deposit flow until an NGN rail is wired up.
+    gateway: 'manual',
     // Nigeria withdraws via mobile money, same flow as Ghana (network + phone),
     // rather than the bank-account path.
     payoutTarget: 'mobile',

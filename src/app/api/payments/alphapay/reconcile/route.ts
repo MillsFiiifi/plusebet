@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { listPaymentsForUser } from '@/lib/payments-store'
-import { verifyAndCreditFlutterwave } from '@/lib/flutterwave-credit'
+import { verifyAndCreditAlphapay } from '@/lib/alphapay-credit'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * Safety net: re-check the user's recent pending Flutterwave deposits and credit
+ * Safety net: re-check the user's recent pending AlphaPay deposits and credit
  * any that settled while they were away (redirect never fired / webhook missed).
- * Called on account-page load. Idempotent — verifyAndCreditFlutterwave guards
+ * Called on account-page load. Idempotent — verifyAndCreditAlphapay guards
  * against double-credit.
  */
 export async function POST(request: Request) {
@@ -24,20 +24,20 @@ export async function POST(request: Request) {
   try {
     payments = await listPaymentsForUser(userId)
   } catch (e) {
-    console.error('[flutterwave/reconcile] list failed:', e)
+    console.error('[alphapay/reconcile] list failed:', e)
     return NextResponse.json({ credited: 0, checked: 0 })
   }
 
   const cutoff = Date.now() - 2 * 60 * 60 * 1000
-  // `failed` is swept alongside `pending`: a start that errored after
-  // Flutterwave had already created the charge (timeout, unparseable reply)
-  // leaves a failed row for a payment the customer may still have approved.
+  // `failed` is swept alongside `pending`: a start that errored after AlphaPay
+  // had already created the payment (timeout, unparseable reply) leaves a
+  // failed row for a payment the customer may still have approved.
   // Re-verifying is idempotent and cheap at this cutoff, and never
   // double-credits — markPaymentResolved is the atomic gate.
   const pending = payments.filter(
     (p) =>
       p.type === 'deposit' &&
-      p.provider === 'flutterwave' &&
+      p.provider === 'alphapay' &&
       (p.status === 'pending' || p.status === 'failed') &&
       new Date(p.createdAt).getTime() >= cutoff,
   )
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   let credited = 0
   for (const p of pending) {
     try {
-      const r = await verifyAndCreditFlutterwave(p.reference)
+      const r = await verifyAndCreditAlphapay(p.reference)
       if (r.status === 'success' || r.status === 'already-credited') credited++
     } catch {
       /* skip; will retry on next load */

@@ -1,21 +1,21 @@
-// Shared verify-then-credit pipeline for Flutterwave deposits.
+// Shared verify-then-credit pipeline for AlphaPay deposits.
 //
 // Used by:
-//   - /api/payments/flutterwave/callback (GET, user redirect after checkout)
-//   - /api/payments/flutterwave/verify   (POST, frontend confirm)
-//   - /api/payments/flutterwave/webhook  (POST, server-to-server, verif-hash)
-//   - /api/payments/flutterwave/reconcile (POST, load-time safety net)
+//   - /api/payments/alphapay/callback  (GET, user redirect after checkout)
+//   - /api/payments/alphapay/verify    (POST, frontend confirm)
+//   - /api/payments/alphapay/webhook   (POST, server-to-server, HMAC-signed)
+//   - /api/payments/alphapay/reconcile (POST, load-time safety net)
 //
-// Idempotent on our tx_ref (the payment `reference`). We always re-verify via
-// verify_by_reference and credit only when data.status === 'successful' with a
-// matching amount + currency. The atomic markPaymentResolved gate guarantees
-// only one path runs applyDepositCredit.
+// Idempotent on our reference. We always re-verify via GET /payments/verify
+// and credit only when status === 'success' with a matching amount + currency.
+// The atomic markPaymentResolved gate guarantees only one path runs
+// applyDepositCredit.
 
 import { findPaymentByReference, markPaymentResolved } from '@/lib/payments-store'
-import { verifyByReference } from '@/lib/flutterwave'
+import { verifyByReference } from '@/lib/alphapay'
 import { applyDepositCredit } from '@/lib/deposit-credit'
 
-export type FlutterwaveCreditStatus =
+export type AlphapayCreditStatus =
   | 'success'
   | 'already-credited'
   | 'missing-reference'
@@ -25,18 +25,18 @@ export type FlutterwaveCreditStatus =
   | 'currency-mismatch'
   | 'no-user'
   | 'credit-failed'
-  | string // pass-through for non-successful statuses (failed/pending/…)
+  | string // pass-through for non-successful statuses (failed/pending/otp_required/…)
 
-export interface FlutterwaveCreditResult {
-  status: FlutterwaveCreditStatus
+export interface AlphapayCreditResult {
+  status: AlphapayCreditStatus
   ok: boolean
   reference: string
 }
 
-export async function verifyAndCreditFlutterwave(
-  txRef: string,
-): Promise<FlutterwaveCreditResult> {
-  const reference = (txRef ?? '').trim()
+export async function verifyAndCreditAlphapay(
+  ref: string,
+): Promise<AlphapayCreditResult> {
+  const reference = (ref ?? '').trim()
   if (!reference) {
     return { status: 'missing-reference', ok: false, reference }
   }
@@ -54,19 +54,20 @@ export async function verifyAndCreditFlutterwave(
   try {
     tx = await verifyByReference(reference)
   } catch (e) {
-    console.error('[flutterwave-credit] verify failed:', e)
+    console.error('[alphapay-credit] verify failed:', e)
     return { status: 'verify-failed', ok: false, reference }
   }
 
-  if (tx.status !== 'successful') {
+  if (tx.status !== 'success') {
     return { status: tx.status, ok: false, reference }
   }
 
-  // Flutterwave returns major-unit amounts. Guard against a tampered redirect
-  // by re-checking the settled amount and currency against the pending row.
+  // AlphaPay returns major-unit amounts (often as a string like "50.00").
+  // Guard against a tampered redirect by re-checking the settled amount and
+  // currency against the pending row.
   const paid = typeof tx.amount === 'number' ? tx.amount : Number(tx.amount)
   if (!Number.isFinite(paid) || paid + 0.01 < pending.amount) {
-    console.error('[flutterwave-credit] amount mismatch', {
+    console.error('[alphapay-credit] amount mismatch', {
       reference,
       pendingAmount: pending.amount,
       paidAmount: paid,
@@ -74,7 +75,7 @@ export async function verifyAndCreditFlutterwave(
     return { status: 'amount-mismatch', ok: false, reference }
   }
   if (tx.currency && pending.currency && tx.currency !== pending.currency) {
-    console.error('[flutterwave-credit] currency mismatch', {
+    console.error('[alphapay-credit] currency mismatch', {
       reference,
       pendingCurrency: pending.currency,
       paidCurrency: tx.currency,
@@ -83,12 +84,12 @@ export async function verifyAndCreditFlutterwave(
   }
 
   if (!pending.userId) {
-    console.error('[flutterwave-credit] missing userId on pending row', reference)
+    console.error('[alphapay-credit] missing userId on pending row', reference)
     return { status: 'no-user', ok: false, reference }
   }
 
   try {
-    const resolved = await markPaymentResolved(pending.id, 'flutterwave auto-verify')
+    const resolved = await markPaymentResolved(pending.id, 'alphapay auto-verify')
     if (!resolved) {
       // Another path (redirect racing the webhook, or admin manual credit)
       // already ran the credit pipeline on this reference.
@@ -96,7 +97,7 @@ export async function verifyAndCreditFlutterwave(
     }
     await applyDepositCredit(pending.userId, pending.amount, { reference })
   } catch (e) {
-    console.error('[flutterwave-credit] credit pipeline failed:', e)
+    console.error('[alphapay-credit] credit pipeline failed:', e)
     return { status: 'credit-failed', ok: false, reference }
   }
 

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatMoneyWithCurrency } from "@/lib/format-money";
 import { GoalAlertsToggle } from "@/components/goal-alerts-toggle";
 import { getUserId, clearUserSession } from "@/lib/user-session";
-import { SUPPORT_WHATSAPP_NUMBER, SUPPORT_WHATSAPP_URL } from "@/lib/support";
+import { SUPPORT_TELEGRAM_HANDLE, SUPPORT_TELEGRAM_URL, SUPPORT_WHATSAPP_NUMBER, SUPPORT_WHATSAPP_URL } from "@/lib/support";
 import {
   getCountryForCurrency,
   getMinFirstDeposit,
@@ -117,11 +117,11 @@ export default function AccountPage() {
       .catch(() => {});
   }, [refresh]);
 
-  // Same safety net for Flutterwave (the main gateway).
+  // Same safety net for AlphaPay (the main Ghana gateway).
   useEffect(() => {
     const id = getUserId();
     if (!id) return;
-    fetch("/api/payments/flutterwave/reconcile", {
+    fetch("/api/payments/alphapay/reconcile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: id }),
@@ -162,9 +162,9 @@ export default function AccountPage() {
     void refresh();
   }, [refresh]);
 
-  // Same banner for the Flutterwave hosted-checkout return (?flutterwave=...).
+  // Same banner for the AlphaPay hosted-checkout return (?alphapay=...).
   useEffect(() => {
-    const status = new URLSearchParams(window.location.search).get("flutterwave");
+    const status = new URLSearchParams(window.location.search).get("alphapay");
     if (!status) return;
     const ok = status === "success" || status === "already-credited";
     setReturnMsg({
@@ -405,8 +405,6 @@ function PaymentModal({
   const [error, setError] = useState<string | null>(null);
   // OTP step: once set, the gateway texted a code we collect on our own screen.
   const [otpRef, setOtpRef] = useState<string | null>(null);
-  // Which gateway the pending OTP belongs to — decides where submitOtp posts.
-  const [otpGateway, setOtpGateway] = useState<"moolre" | "flutterwave">("moolre");
   const [otp, setOtp] = useState("");
   // When a gateway needs the customer on its own secure page, we show a clear
   // hand-off screen (with this URL) instead of silently redirecting them.
@@ -423,19 +421,17 @@ function PaymentModal({
   // Korapay hosted checkout (Ghana + Nigeria): mint a one-time checkout URL and
   // redirect the player there. Auto-credits on return via callback + webhook.
   const useKorapay = getCountryForCurrency(cc).gateway === "korapay";
-  // Flutterwave — the MAIN gateway. Ghana uses our OWN branded MoMo checkout
-  // (direct charge + phone prompt, no hosted page); Nigeria uses the hosted
-  // redirect (card / bank / USSD). Korapay is the automatic fallback.
-  const useFlutterwave = getCountryForCurrency(cc).gateway === "flutterwave";
-  const useFlutterwaveMomo = useFlutterwave && cc === "GHS";
-  const useFlutterwaveHosted = useFlutterwave && cc !== "GHS";
+  // AlphaPay — the MAIN Ghana gateway. Hosted checkout: we mint a one-time
+  // checkout URL, the player pays there (MoMo prompt / SMS code handled on
+  // AlphaPay's page) and we credit on return via callback + signed webhook.
+  const useAlphapay = getCountryForCurrency(cc).gateway === "alphapay";
   // Paystack mobile-money checkout. NETWORK ids (mtn/vod/atl) are
   // Paystack's GH provider codes, sent as `provider` to the start endpoint.
   const usePaystackMomo = getCountryForCurrency(cc).gateway === "paystack";
-  // Hosted redirect checkouts (Moolre, Korapay, Flutterwave-NG) skip the
+  // Hosted redirect checkouts (Moolre, Korapay, AlphaPay) skip the
   // agent-account + screenshot UI: the player pays on the gateway page and we
   // credit on return.
-  const useHostedCheckout = useMoolre || useKorapay || useFlutterwaveHosted;
+  const useHostedCheckout = useMoolre || useKorapay || useAlphapay;
   const minDeposit = getMinFirstDeposit(userCountry);
   // Count-based withdrawal gate — 3 deposits at or above the country's
   // qualifying amount (Ghana: GHS 300). Zero means the count gate is switched
@@ -495,89 +491,21 @@ function PaymentModal({
   // Route the deposit to the right flow for the user's country.
   async function deposit() {
     if (useMoolre) return depositMoolre();
-    if (useFlutterwaveMomo) return depositFlutterwaveMomo();
-    if (useFlutterwaveHosted) return depositFlutterwave();
+    if (useAlphapay) return depositAlphapay();
     if (useKorapay) return depositKorapay();
     if (usePaystackMomo) return depositPaystackMomo();
     return depositManual();
   }
 
-  // Custom Ghana MoMo checkout: charge Flutterwave directly and poll while the
-  // player approves the prompt on their phone — all on our own screen. Falls
-  // back to Korapay if the charge can't start.
-  async function pollFlutterwaveMomo(reference: string) {
-    const TERMINAL_FAIL = [
-      "failed", "amount-mismatch", "currency-mismatch", "verify-failed",
-      "no-user", "credit-failed", "unknown-reference",
-    ];
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 3000));
-      try {
-        const res = await fetch(`/api/payments/flutterwave/momo/status?reference=${encodeURIComponent(reference)}`);
-        const data = await res.json();
-        const s = data.status as string;
-        if (s === "success" || s === "already-credited") { setDone(true); onSuccess(); return; }
-        if (TERMINAL_FAIL.includes(s)) { setError("Payment was not completed. Please try again."); return; }
-        setStatus("Waiting for your approval — " + approvalHint);
-      } catch {
-        /* transient — keep polling */
-      }
-    }
-    setError("Still waiting for confirmation. If you approved the payment, your balance will update once it settles — refresh in a minute.");
-  }
-
-  async function depositFlutterwaveMomo() {
-    if (!phone.trim()) {
-      setError("Enter your mobile money number.");
-      return;
-    }
-    setError(null);
-    setBusy(true);
-    setStatus("Starting mobile money deposit…");
-    try {
-      const res = await fetch("/api/payments/flutterwave/momo/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, amount: amt, phone: phone.trim(), network, purpose: "deposit" }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.reference) {
-        console.error("[deposit] flutterwave momo start failed:", data.error);
-        setError("We couldn't start your Mobile Money deposit right now. Please try again in a moment.");
-        return;
-      }
-      // OTP mode: the network texted a code — collect it on our own screen.
-      if (data.otpRequired) {
-        setOtpGateway("flutterwave");
-        setOtpRef(data.reference as string);
-        setStatus("");
-        return;
-      }
-      // Voucher/redirect networks still hand off to Flutterwave's page — show a
-      // clear branded interstitial first so the customer isn't confused.
-      if (data.redirect) {
-        setRedirectUrl(data.redirect as string);
-        setStatus("");
-        return;
-      }
-      setStatus("Approve the prompt on your phone to complete your deposit.");
-      await pollFlutterwaveMomo(data.reference);
-    } catch {
-      setError("Network error — please try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // Flutterwave (GH + NG) is the ONLY gateway: mint a hosted-checkout URL and
-  // send the customer there. If Flutterwave can't start, show a clear error —
-  // no Korapay fallback (that merchant is deactivated).
-  async function depositFlutterwave() {
+  // AlphaPay (GH) is the main gateway: mint a hosted-checkout URL and send the
+  // customer there. The callback re-verifies and auto-credits on return; the
+  // signed webhook is the backstop if they close the tab before redirecting.
+  async function depositAlphapay() {
     setError(null);
     setBusy(true);
     setStatus("Opening secure checkout…");
     try {
-      const res = await fetch("/api/payments/flutterwave/start", {
+      const res = await fetch("/api/payments/alphapay/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, amount: amt, returnPath: "/account" }),
@@ -587,7 +515,7 @@ function PaymentModal({
         window.location.assign(data.url);
         return;
       }
-      console.error("[deposit] flutterwave start failed:", data.error);
+      console.error("[deposit] alphapay start failed:", data.error);
       setError("We couldn't open the secure checkout right now. Please try again in a moment.");
       setBusy(false);
     } catch {
@@ -727,29 +655,18 @@ function PaymentModal({
     }
   }
 
-  // Step 2 — submit the SMS code to complete the charge. Routes to the gateway
-  // that issued the code (Flutterwave validate-charge, or Moolre direct).
+  // Step 2 — submit the SMS code to complete a Moolre direct charge.
   async function submitOtp() {
     if (!otpRef || !otp.trim()) return;
-    const isFlutterwave = otpGateway === "flutterwave";
     setError(null);
     setBusy(true);
     setStatus("Verifying code…");
     try {
-      const res = await fetch(
-        isFlutterwave
-          ? "/api/payments/flutterwave/momo/otp"
-          : "/api/payments/moolre/direct/otp",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            isFlutterwave
-              ? { reference: otpRef, otp: otp.trim() }
-              : { reference: otpRef, otpcode: otp.trim() },
-          ),
-        },
-      );
+      const res = await fetch("/api/payments/moolre/direct/otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference: otpRef, otpcode: otp.trim() }),
+      });
       const data = await res.json();
       setDiag(data.moolre ? `Moolre: ${data.moolre.code ?? "?"} — ${data.moolre.message ?? ""}` : `status=${data.status}`);
       if (data.status === "already-credited" || data.status === "success") {
@@ -766,7 +683,7 @@ function PaymentModal({
         return;
       }
       setStatus(approvalHint);
-      await (isFlutterwave ? pollFlutterwaveMomo(otpRef) : pollDeposit(otpRef));
+      await pollDeposit(otpRef);
     } catch {
       setError("Network error — please try again.");
     } finally {
@@ -926,46 +843,9 @@ function PaymentModal({
         ) : (
           <div className="p-5 space-y-4">
             {type === "deposit" ? (
-              useFlutterwaveMomo ? (
-              <>
-              <div>
-                <label className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">Choose network</label>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {NETWORKS.map((n) => (
-                    <button
-                      key={n.id}
-                      onClick={() => setNetwork(n.id)}
-                      disabled={busy}
-                      className={cn("flex flex-col items-center gap-1 rounded-xl border py-3 text-[10.5px] font-semibold transition disabled:opacity-50",
-                        network === n.id ? "border-[var(--color-violet)]/60 bg-[var(--color-surface-2)] text-[var(--color-ink)] glow-violet" : "border-[var(--color-line)] text-[var(--color-ink-dim)] hover:border-[var(--color-line-2)]",
-                      )}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={n.logo} alt={n.name} className="w-8 h-8 rounded-md object-contain" />
-                      {n.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">Mobile-money number</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={busy}
-                  placeholder="0244 XXX XXX"
-                  className="w-full mt-2 num text-[15px] bg-[var(--color-surface)] border border-[var(--color-line)] rounded-xl px-3.5 py-3 outline-none focus:border-[var(--color-violet)]/60"
-                />
-                <p className="mt-2 text-[11px] text-[var(--color-ink-faint)] leading-snug">
-                  You&apos;ll get a prompt on your phone to approve the payment. Your
-                  balance updates automatically once it&apos;s confirmed.
-                </p>
-              </div>
-              </>
-              ) : useHostedCheckout ? (
+              useHostedCheckout ? (
               <div className="rounded-xl border border-[var(--color-violet)]/30 bg-[var(--color-surface-2)] px-3.5 py-3.5">
-                {useMoolre && (
+                {(useMoolre || useAlphapay) && (
                   <div className="flex items-center gap-2">
                     {NETWORKS.map((n) => (
                       /* eslint-disable-next-line @next/next/no-img-element */
@@ -973,7 +853,7 @@ function PaymentModal({
                     ))}
                   </div>
                 )}
-                <p className={cn("text-[12px] text-[var(--color-ink-dim)] leading-snug", useMoolre && "mt-2.5")}>
+                <p className={cn("text-[12px] text-[var(--color-ink-dim)] leading-snug", (useMoolre || useAlphapay) && "mt-2.5")}>
                   {useKorapay
                     ? "Continue to the secure checkout to pay with mobile money, card or bank transfer — your balance updates automatically once paid."
                     : "Continue to the secure page to pay with MTN MoMo, Telecel Cash or AirtelTigo Money — your balance updates automatically once paid."}
@@ -1085,7 +965,7 @@ function PaymentModal({
               )}
             </div>
 
-            {type === "deposit" && !useHostedCheckout && !useFlutterwaveMomo && (
+            {type === "deposit" && !useHostedCheckout && (
               <div>
                 <label className="text-[11px] font-mono uppercase tracking-wide text-[var(--color-ink-faint)]">Payment screenshot</label>
                 <label className={cn(
@@ -1143,14 +1023,14 @@ function PaymentModal({
 
             <button
               onClick={type === "deposit" ? deposit : withdraw}
-              disabled={busy || !(amt > 0) || belowMin || (type === "deposit" && !useHostedCheckout && !useFlutterwaveMomo && !file) || (type === "deposit" && useFlutterwaveMomo && !phone.trim()) || (type === "withdraw" && !phone.trim())}
+              disabled={busy || !(amt > 0) || belowMin || (type === "deposit" && !useHostedCheckout && !file) || (type === "withdraw" && !phone.trim())}
               className="w-full rounded-xl py-3.5 font-display font-extrabold text-[14px] grad-violet-pink text-[var(--color-ink)] disabled:opacity-50 active:scale-[.99] transition capitalize flex items-center justify-center gap-2"
             >
               {busy && <Loader2 size={16} className="animate-spin" />}
               {type === "deposit"
                 ? busy
-                  ? (useHostedCheckout ? "Redirecting…" : useFlutterwaveMomo ? "Processing…" : "Submitting…")
-                  : `${useHostedCheckout || useFlutterwaveMomo ? "Deposit" : "Submit deposit"} ${amt > 0 ? money(amt) : ""}`
+                  ? (useHostedCheckout ? "Redirecting…" : "Submitting…")
+                  : `${useHostedCheckout ? "Deposit" : "Submit deposit"} ${amt > 0 ? money(amt) : ""}`
                 : `Withdraw ${amt > 0 ? money(amt) : ""}`}
             </button>
 
@@ -1164,6 +1044,15 @@ function PaymentModal({
                   className="font-semibold text-[var(--color-cyan)] hover:underline num"
                 >
                   WhatsApp {SUPPORT_WHATSAPP_NUMBER}
+                </a>{" "}
+                or{" "}
+                <a
+                  href={SUPPORT_TELEGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-[var(--color-cyan)] hover:underline"
+                >
+                  Telegram @{SUPPORT_TELEGRAM_HANDLE}
                 </a>
               </p>
             )}

@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { ADMIN_COOKIE, isValidSessionCookie } from '@/lib/admin-auth'
 import { findPaymentById, markPaymentResolved } from '@/lib/payments-store'
 import { applyDepositCredit } from '@/lib/deposit-credit'
-import { verifyAndCreditFlutterwave } from '@/lib/flutterwave-credit'
+import { verifyAndCreditAlphapay } from '@/lib/alphapay-credit'
 import { verifyAndCreditKorapay } from '@/lib/korapay-credit'
 import { verifyAndCreditPaystack } from '@/lib/paystack-credit'
 import { verifyAndCreditMomo } from '@/lib/momo-credit'
@@ -42,8 +42,8 @@ function gatewayVerifier(
   metadata: Record<string, unknown>,
 ): ((reference: string) => Promise<GatewayResult>) | null {
   switch (provider) {
-    case 'flutterwave':
-      return verifyAndCreditFlutterwave
+    case 'alphapay':
+      return verifyAndCreditAlphapay
     case 'korapay':
       return verifyAndCreditKorapay
     case 'paystack':

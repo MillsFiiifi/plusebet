@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { findUserById } from '@/lib/users-store'
-import { recordPayment } from '@/lib/payments-store'
-import { getFlutterwavePublicKey, initialisePayment } from '@/lib/flutterwave'
+import { recordPayment, markPaymentFailed } from '@/lib/payments-store'
+import { getAlphapayDomain, initialisePayment } from '@/lib/alphapay'
 import { getMinFirstDeposit } from '@/lib/countries'
 
 export const dynamic = 'force-dynamic'
@@ -56,6 +56,11 @@ export async function POST(request: Request) {
   const user = await findUserById(userId)
   if (!user) return NextResponse.json({ error: 'user not found' }, { status: 404 })
 
+  // AlphaPay settles in Ghana cedis only.
+  if (user.currency !== 'GHS') {
+    return NextResponse.json({ error: 'this payment method is Ghana-only' }, { status: 400 })
+  }
+
   const minDeposit = getMinFirstDeposit(user.country)
   if (amount < minDeposit) {
     return NextResponse.json(
@@ -64,21 +69,21 @@ export async function POST(request: Request) {
     )
   }
 
-  const refPrefix = purpose === 'verification' ? 'FW-VRF' : 'FW-DEP'
-  const txRef = `${refPrefix}-${userId.slice(0, 8)}-${Date.now()}`
+  const refPrefix = purpose === 'verification' ? 'AP-VRF' : 'AP-DEP'
+  const reference = `${refPrefix}-${userId.slice(0, 8)}-${Date.now()}`
   const origin = originFromRequest(request)
-  // Bake returnPath + our tx_ref into the redirect so the callback can credit
-  // immediately, regardless of what query params Flutterwave appends.
-  const redirectUrl = `${origin}/api/payments/flutterwave/callback?returnPath=${encodeURIComponent(returnPath)}&tx_ref=${encodeURIComponent(txRef)}`
+  // Bake returnPath + our reference into the callback so it can credit
+  // immediately, regardless of what query params AlphaPay appends.
+  const callbackUrl = `${origin}/api/payments/alphapay/callback?returnPath=${encodeURIComponent(returnPath)}&reference=${encodeURIComponent(reference)}`
 
   try {
     await recordPayment({
       userId,
-      reference: txRef,
+      reference,
       amount,
       type: 'deposit',
       status: 'pending',
-      provider: 'flutterwave',
+      provider: 'alphapay',
       currency: user.currency,
       metadata: {
         purpose,
@@ -89,46 +94,30 @@ export async function POST(request: Request) {
       },
     })
   } catch (e) {
-    console.error('[flutterwave/start] pending ledger write failed:', e)
+    console.error('[alphapay/start] pending ledger write failed:', e)
   }
-
-  // Show the real customer on the Flutterwave account; fall back to a neutral
-  // placeholder only if a user has no email on file.
-  const customerEmail = user.email?.trim() || `customer+${userId}@betlixx.com`
-
-  // Ghana → open the checkout straight on Mobile Money. Nigeria has no
-  // Ghana-style MoMo, so leave all methods (card / bank transfer / USSD).
-  const paymentOptions = user.currency === 'GHS' ? 'mobilemoneyghana' : undefined
 
   try {
     const init = await initialisePayment({
-      email: customerEmail,
-      name: user.name,
-      phone: user.phone,
       amount,
-      currency: user.currency,
-      txRef,
-      redirectUrl,
-      title: purpose === 'verification' ? 'Account verification' : 'Deposit',
-      paymentOptions,
-      meta: { userId, purpose, country: user.country },
+      reference,
+      domain: getAlphapayDomain(request.headers.get('x-forwarded-host') ?? request.headers.get('host')),
+      phone: user.phone,
+      callbackUrl,
     })
     return NextResponse.json(
-      {
-        url: init.link,
-        reference: txRef,
-        publicKey: getFlutterwavePublicKey(),
-        amount,
-        currency: user.currency,
-        email: customerEmail,
-      },
+      { url: init.checkoutUrl, reference, amount, currency: user.currency },
       { status: 201 },
     )
   } catch (e) {
-    console.error('[flutterwave/start] init failed:', e)
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'flutterwave init failed' },
-      { status: 502 },
+    console.error('[alphapay/start] init failed:', e)
+    // Retire the pending row so it doesn't linger as a live deposit — the
+    // reconcile sweep still re-checks failed rows, so a payment that did get
+    // created despite this error is not stranded.
+    const reason = e instanceof Error ? e.message : 'alphapay init failed'
+    await markPaymentFailed(reference, reason).catch((err) =>
+      console.error('[alphapay/start] pending row cleanup failed:', err),
     )
+    return NextResponse.json({ error: reason }, { status: 502 })
   }
 }
