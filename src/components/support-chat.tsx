@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
+import { SUPPORT_TELEGRAM_HANDLE, SUPPORT_TELEGRAM_URL } from "@/lib/support";
 
 type Msg = { from: "bot" | "me"; text: string };
 
@@ -31,7 +32,7 @@ export function SupportChat() {
     setMsgs((m) => [...m, { from: "me", text }]);
     setInput("");
     setTimeout(() => {
-      const reply = REPLIES[text] ?? "Thanks! A support agent will be with you shortly. Meanwhile, you can check our FAQ or try one of the quick options below. 🙌";
+      const reply = REPLIES[text] ?? `Thanks! For anything else, message our team on Telegram @${SUPPORT_TELEGRAM_HANDLE} — or try one of the quick options below. 🙌`;
       setMsgs((m) => [...m, { from: "bot", text: reply }]);
     }, 600);
   }
@@ -95,6 +96,16 @@ export function SupportChat() {
               </button>
             ))}
           </div>
+
+          {/* human escalation — the bot only covers the quick replies */}
+          <a
+            href={SUPPORT_TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-3.5 mb-2 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[var(--color-cyan)] hover:underline"
+          >
+            <Send size={12} /> Talk to a human on Telegram @{SUPPORT_TELEGRAM_HANDLE}
+          </a>
 
           {/* input */}
           <div className="p-3 border-t border-[var(--color-line)] flex items-center gap-2">

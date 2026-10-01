@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Lock, Clock } from "lucide-react";
+import { Lock, Clock, Send } from "lucide-react";
 import { Brand } from "./brand";
+import { SUPPORT_TELEGRAM_HANDLE, SUPPORT_TELEGRAM_URL } from "@/lib/support";
 
 type FooterLink = { label: string; href: string };
 
@@ -70,6 +71,15 @@ export function SiteFooter() {
                 <Clock size={13} className="text-[var(--color-ink-faint)]" />{" "}
                 24/7 support
               </span>
+              <a
+                href={SUPPORT_TELEGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-[11.5px] text-[var(--color-ink-dim)] hover:text-[var(--color-ink)] transition-colors"
+              >
+                <Send size={13} className="text-[var(--color-ink-faint)]" />{" "}
+                Telegram @{SUPPORT_TELEGRAM_HANDLE}
+              </a>
             </div>
           </div>
 
