@@ -64,14 +64,17 @@ export async function initialisePayment(input: {
   phone?: string | null
   callbackUrl?: string
 }): Promise<AlphapayInitResponse> {
-  const res = await fetch(`${ALPHAPAY_BASE}/payments/initialize`, {
+  // The trailing slash is load-bearing: without it the API 301-redirects, and
+  // fetch rewrites the redirected POST to a bodiless GET, losing the payload.
+  const res = await fetch(`${ALPHAPAY_BASE}/payments/initialize/`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${getSecretKey()}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      amount: input.amount,
+      // The API's decimal parser rejects a JSON number — send a "200.00" string.
+      amount: input.amount.toFixed(2),
       currency: 'GHS',
       reference: input.reference,
       domain: input.domain,
@@ -103,7 +106,7 @@ export async function initialisePayment(input: {
  */
 export async function verifyByReference(reference: string): Promise<AlphapayTxData> {
   const res = await fetch(
-    `${ALPHAPAY_BASE}/payments/verify/${encodeURIComponent(reference)}`,
+    `${ALPHAPAY_BASE}/payments/verify/${encodeURIComponent(reference)}/`,
     {
       headers: { Authorization: `Bearer ${getSecretKey()}` },
       cache: 'no-store',
